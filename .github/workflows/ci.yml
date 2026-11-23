@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Sintaxis PHP
+        run: |
+          php -l panel/api.php
+          php -l panel/config.sample.php
+      - name: Sintaxis JavaScript del panel
+        run: |
+          python3 - <<'PY'
+          import re
+          h = open('panel/index.html', encoding='utf-8').read()
+          open('/tmp/panel.js', 'w').write('\n;\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', h, re.S)))
+          PY
+          node --check /tmp/panel.js
+      - name: Decoders de MikroTik
+        run: python3 tests/test_decoders.py
+      - name: XML, IDs de reglas y datos sensibles
+        run: python3 tests/validate_repo.py

@@ -1,0 +1,12 @@
+<!--
+  OPCIONAL. Baja a nivel 7 las alertas del detector de vulnerabilidades (regla 23506,
+  nivel 13) para que no inunden Telegram/correo cuando hay un equipo desactualizado.
+  Las vulnerabilidades siguen en el dashboard de Wazuh y en el panel; solo cambia el
+  nivel de la alerta. Instalar en /var/ossec/etc/rules/local_vuln_quiet.xml
+-->
+<group name="vulnerability-detector,">
+  <rule id="100900" level="7">
+    <if_sid>23506</if_sid>
+    <description>$(vulnerability.cve) affects $(vulnerability.package.name) (nivel bajado a 7)</description>
+  </rule>
+</group>

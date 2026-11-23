@@ -1,0 +1,12 @@
+# Nunca subir credenciales ni datos reales
+config.php
+*.pem
+*.key
+.env
+vulns-history.json
+*.log
+# Capturas de pantalla con datos reales
+captura-real-*
+docs/img/real-*
+.DS_Store
+__pycache__/

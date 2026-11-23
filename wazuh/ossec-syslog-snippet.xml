@@ -1,0 +1,9 @@
+<!-- Agregar dentro de <ossec_config> en /var/ossec/etc/ossec.conf, como un segundo bloque <remote>.
+     Hace una copia antes:  sudo cp /var/ossec/etc/ossec.conf /var/ossec/etc/ossec.conf.bak -->
+<remote>
+  <connection>syslog</connection>
+  <port>514</port>
+  <protocol>udp</protocol>
+  <allowed-ips>192.168.10.1</allowed-ips>   <!-- IP con la que el router sale hacia Wazuh -->
+  <local_ip>192.168.10.57</local_ip>        <!-- IP del servidor Wazuh -->
+</remote>

@@ -1,0 +1,27 @@
+# Apache: restringir el panel y agregar cabeceras de seguridad.
+# Copiar a /etc/apache2/conf-available/panel.conf, luego:
+#   sudo a2enmod headers && sudo a2enconf panel && sudo systemctl reload apache2
+<Directory /var/www/html/panel>
+    # Solo la red de administración (ajustar)
+    Require ip 192.168.10.0/24
+
+    # Opcional: ademas, usuario y clave
+    # AuthType Basic
+    # AuthName "Panel de decisiones"
+    # AuthUserFile /etc/panel-decisiones/htpasswd
+    # Require valid-user
+
+    Options -Indexes
+    <IfModule mod_headers.c>
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set X-Frame-Options "DENY"
+        Header always set Referrer-Policy "no-referrer"
+        # La pagina es un solo archivo con script y estilo en linea; no carga nada de afuera.
+        Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    </IfModule>
+</Directory>
+
+# El archivo de configuracion no debe estar nunca bajo el directorio web.
+<FilesMatch "^config\.php$">
+    Require all denied
+</FilesMatch>

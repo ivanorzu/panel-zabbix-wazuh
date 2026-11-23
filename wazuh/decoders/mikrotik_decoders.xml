@@ -1,0 +1,42 @@
+<!--
+  Decoders para el syslog de MikroTik RouterOS 7.x -> Wazuh.
+  Instalar en: /var/ossec/etc/decoders/mikrotik_decoders.xml
+  Propietario wazuh:wazuh, permisos 660.
+
+  RouterOS envia texto SIN cabecera syslog, con la forma "temas mensaje":
+    system,error,critical login failure for user admin from 203.0.113.50 via winbox
+    system,info,account user admin logged in from 192.168.10.97 via winbox
+    firewall,info WANIN-ISP1 input: in:sfp28-2 out:(unknown 0), connection-state:new proto TCP (SYN), 198.51.100.23:51514->203.0.113.10:23, len 40
+
+  Detalle importante: cada decoder hijo lleva su propio <prematch> y el regex usa
+  offset="after_parent". Sin eso, los campos no se extraen.
+-->
+
+<!-- Padre: lineas que empiezan con la lista de temas separada por comas -->
+<decoder name="mikrotik">
+  <prematch type="pcre2">^[a-z0-9]+(?:,[a-z0-9!]+)+ </prematch>
+</decoder>
+
+<!-- Login fallido (winbox, ssh, api, web...) -->
+<decoder name="mikrotik-login">
+  <parent>mikrotik</parent>
+  <prematch type="pcre2">login failure for user</prematch>
+  <regex type="pcre2" offset="after_parent">login failure for user (\S+) from (\S+) via (\S+)</regex>
+  <order>dstuser,srcip,protocol</order>
+</decoder>
+
+<!-- Sesion iniciada / cerrada (RouterOS registra cada una dos veces; es normal) -->
+<decoder name="mikrotik-session">
+  <parent>mikrotik</parent>
+  <prematch type="pcre2">user \S+ logged (?:in|out) from</prematch>
+  <regex type="pcre2" offset="after_parent">user (\S+) logged (in|out) from (\S+) via (\S+)</regex>
+  <order>dstuser,action,srcip,protocol</order>
+</decoder>
+
+<!-- Conexion nueva desde internet, registrada por una regla de firewall con log-prefix WANIN-<enlace> -->
+<decoder name="mikrotik-fw">
+  <parent>mikrotik</parent>
+  <prematch type="pcre2">WANIN-\w+ input: in:</prematch>
+  <regex type="pcre2" offset="after_parent">(WANIN-\w+) input: in:(\S+) out:.*?proto (\w+)(?: \([^)]*\))?, (\d{1,3}(?:\.\d{1,3}){3}):(\d+)->(\d{1,3}(?:\.\d{1,3}){3}):(\d+), len</regex>
+  <order>wan_link,wan_if,protocol,srcip,srcport,dstip,dstport</order>
+</decoder>

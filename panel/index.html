@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Panel de decisiones</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #6f6d68;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --hover: rgba(11, 11, 11, 0.045);
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --track: #cde2fb;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b;
+  --good-text: #006300;
+  --sev-crit: #d03b3b; --sev-high: #ec835a; --sev-med: #fab219; --sev-low: #86b6ef;
+  --banner-bg: #fff4d6; --banner-ink: #5c4300;
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #a09e97;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10); --hover: rgba(255, 255, 255, 0.06);
+    --accent: #3987e5; --track: #0d366b;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --good-text: #0ca30c; --sev-low: #3987e5;
+    --banner-bg: #3a2f0a; --banner-ink: #f5dc9a; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #a09e97;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10); --hover: rgba(255, 255, 255, 0.06);
+  --accent: #3987e5; --track: #0d366b;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --good-text: #0ca30c; --sev-low: #3987e5;
+  --banner-bg: #3a2f0a; --banner-ink: #f5dc9a; --shadow: none;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+button, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.app { max-width: 1280px; margin: 0 auto; padding: 0 16px 48px; }
+
+/* banner de datos de ejemplo */
+.demo-banner {
+  position: sticky; top: 0; z-index: 20; margin: 0; padding: 8px 16px;
+  background: var(--banner-bg); color: var(--banner-ink); font-weight: 600; text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+/* cabecera */
+.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding: 20px 0 12px; }
+.top h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+.top .sub { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+.sources { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--ink-2); white-space: nowrap;
+}
+.chip svg { flex: none; }
+.btn {
+  border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+.btn:hover { background: var(--hover); }
+.btn[aria-pressed="true"] { border-color: var(--accent); }
+.btn.icon { padding: 6px 9px; }
+
+/* tabs */
+.tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--grid); margin-bottom: 14px; scrollbar-width: thin; }
+.tab {
+  background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; cursor: pointer;
+  color: var(--ink-2); white-space: nowrap; font-weight: 500; margin-bottom: -1px;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 650; }
+.tab .count { margin-left: 6px; font-size: 12px; padding: 0 6px; border-radius: 999px; background: var(--crit); color: #fff; }
+
+/* una sola fila de filtros, arriba de todo */
+.filters { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-bottom: 16px; }
+.filters label { color: var(--ink-2); font-size: 13px; margin-right: 6px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: none; padding: 6px 12px; cursor: pointer; border-right: 1px solid var(--border); }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--hover); }
+.seg button[aria-checked="true"] { font-weight: 650; box-shadow: inset 0 -2px 0 var(--accent); }
+select { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 6px 28px 6px 10px; }
+.filters .grow { flex: 1; }
+.updated { color: var(--muted); font-size: 12px; }
+
+/* tarjetas */
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.col-12 { grid-column: span 12; } .col-8 { grid-column: span 8; } .col-6 { grid-column: span 6; }
+.col-4 { grid-column: span 4; } .col-3 { grid-column: span 3; }
+@media (max-width: 980px) { .col-8, .col-6, .col-4 { grid-column: span 12; } .col-3 { grid-column: span 6; } }
+@media (max-width: 560px) { .col-3 { grid-column: span 12; } }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow);
+  min-width: 0; transition: opacity .15s;
+}
+.busy .card { opacity: .55; }
+.card header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.card h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.card .sub { color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+.card .tools { display: flex; gap: 6px; flex: none; }
+.link-btn { background: none; border: 0; color: var(--ink-2); cursor: pointer; padding: 2px 6px; border-radius: 6px; font-size: 12.5px; }
+.link-btn:hover { background: var(--hover); color: var(--ink); }
+.empty { color: var(--ink-2); padding: 18px 4px; }
+.callout {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 8px;
+  background: var(--hover); color: var(--ink-2); font-size: 13px;
+}
+.callout.err { border-left: 3px solid var(--crit); }
+
+/* hero + kpi */
+.hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+.hero .num { font-size: 56px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; }
+.hero .txt { font-size: 15px; color: var(--ink-2); }
+.hero .txt b { color: var(--ink); }
+.kpi { display: flex; flex-direction: column; gap: 4px; }
+.kpi .label { color: var(--ink-2); font-size: 12.5px; }
+.kpi .value { font-size: 28px; font-weight: 650; line-height: 1.1; }
+.kpi .value small { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 4px; }
+.kpi .delta { font-size: 12.5px; color: var(--ink-2); }
+.kpi .spark { height: 28px; margin-top: 2px; }
+
+/* lista "qué atender" */
+.todo { list-style: none; margin: 0; padding: 0; }
+.todo li { display: grid; grid-template-columns: 112px 1fr auto; gap: 10px 14px; padding: 10px 0; border-top: 1px solid var(--grid); align-items: start; }
+.todo li:first-child { border-top: 0; }
+.todo .t { font-weight: 600; }
+.todo .d { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+@media (max-width: 640px) { .todo li { grid-template-columns: 1fr; } }
+.sev {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 8px 2px 6px;
+  border-radius: 999px; border: 1px solid var(--border); white-space: nowrap; color: var(--ink);
+}
+.sev svg { flex: none; }
+
+/* tablas */
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--ink-2); padding: 6px 10px; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+td { padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.click { cursor: pointer; }
+tr.click:hover td, tr.sel td { background: var(--hover); }
+td .muted { color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* medidor */
+.meter { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.meter .bar { flex: 1; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.meter .bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.meter .bar i.w { background: var(--warn); } .meter .bar i.c { background: var(--crit); }
+.meter span { font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+
+/* gráficos */
+.chart { width: 100%; min-height: 40px; position: relative; }
+.chart svg { display: block; overflow: visible; }
+.chart text { font: 11.5px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 8px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; }
+.legend i.rect { width: 10px; height: 10px; border-radius: 2px; }
+.legend i.line { width: 16px; height: 0; border-top: 2px solid; }
+.legend i.dash { width: 16px; height: 0; border-top: 2px dashed; }
+.tip {
+  position: fixed; z-index: 50; pointer-events: none; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  max-width: 320px; display: none;
+}
+.tip .h { color: var(--ink-2); margin-bottom: 4px; }
+.tip .r { display: flex; align-items: center; gap: 8px; }
+.tip .r b { font-weight: 650; margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
+.tip .k { display: inline-block; width: 12px; height: 0; border-top: 2px solid; flex: none; }
+.tip .k.rect { height: 9px; border-top: 0; width: 9px; border-radius: 2px; }
+
+.two { display: grid; gap: 14px; grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 980px) { .two { grid-template-columns: 1fr; } }
+.mini-h { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.note { color: var(--ink-2); font-size: 12.5px; margin-top: 8px; }
+
+@media (forced-colors: active) { .meter .bar i { background: Highlight; } }
+@media print { .filters, .tabs, .btn, .tools { display: none !important; } .card { break-inside: avoid; } }
+
+/* barras horizontales */
+.hbar { display: grid; gap: 7px; }
+.hb { display: grid; grid-template-columns: minmax(80px, 190px) minmax(0, 1fr) minmax(70px, auto); gap: 10px; align-items: center; font-size: 13px; }
+.hb .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb .area { height: 10px; position: relative; }
+.hb .area.track { background: var(--track); border-radius: 5px; }
+.hb .area .b { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }
+.hb .area.track .b { border-radius: 5px; }
+.hb .area.stack .segs { display: flex; gap: 2px; height: 100%; }
+.hb .area.stack .segs i { display: block; border-radius: 2px; min-width: 2px; }
+.hb .v { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 560px) { .hb { grid-template-columns: minmax(70px, 110px) minmax(0, 1fr) auto; gap: 6px; } }
+.row-gap { display: grid; gap: 14px; }
+.hint { color: var(--ink-2); font-size: 12.5px; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--hover); font-size: 12px; color: var(--ink-2); }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; }
+.steps li { counter-increment: st; position: relative; padding: 10px 0 10px 38px; border-top: 1px solid var(--grid); }
+.steps li:first-child { border-top: 0; }
+.steps li::before { content: counter(st); position: absolute; left: 0; top: 10px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--axis); display: grid; place-items: center; font-weight: 650; font-size: 13px; }
+.steps .t { font-weight: 600; }
+.steps .d { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+
+/* ===== v2: cabecera, tablero, panel de detalle, modo pantalla ===== */
+.top h1 { display: flex; align-items: center; gap: 10px; }
+.logo { flex: none; }
+input[type="search"] { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 6px 10px; min-width: 240px; font: inherit; color: inherit; }
+.sevbar { display: flex; gap: 2px; height: 10px; margin: 14px 0 8px; max-width: 560px; }
+.sevbar i { display: block; border-radius: 2px; min-width: 6px; }
+.sevlegend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); }
+.sevlegend span { display: inline-flex; align-items: center; gap: 6px; }
+.more { margin-top: 8px; }
+.tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); }
+.tile {
+  text-align: left; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--tc, var(--axis));
+  border-radius: 10px; padding: 12px 14px; cursor: pointer; display: flex; flex-direction: column; gap: 9px; color: inherit; font: inherit;
+  transition: background .12s, box-shadow .12s;
+}
+.tile:hover { background: var(--hover); box-shadow: 0 2px 10px rgba(0, 0, 0, .08); }
+.t-crit { --tc: var(--sev-crit); } .t-high { --tc: var(--sev-high); } .t-med { --tc: var(--sev-med); } .t-low { --tc: var(--sev-low); } .t-ok { --tc: var(--good); }
+.tile .hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.tile .nm { font-weight: 650; overflow-wrap: anywhere; }
+.tile .rl { color: var(--muted); font-size: 12.5px; }
+.mini { display: grid; grid-template-columns: 40px 1fr 40px; gap: 8px; align-items: center; font-size: 12px; color: var(--ink-2); }
+.mini .bar { height: 6px; border-radius: 3px; background: var(--track); }
+.mini .bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.mini .bar i.w { background: var(--warn); } .mini .bar i.c { background: var(--crit); }
+.mini .val { text-align: right; font-variant-numeric: tabular-nums; }
+.tile .ft { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink-2); }
+.tile .ft span { display: inline-flex; align-items: center; gap: 5px; }
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .38); z-index: 40; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(580px, 100vw); background: var(--page); border-left: 1px solid var(--border);
+  z-index: 41; overflow-y: auto; box-shadow: -10px 0 30px rgba(0, 0, 0, .22); animation: slidein .18s ease-out;
+}
+@keyframes slidein { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .drawer { animation: none; } }
+.drawer .dh { position: sticky; top: 0; z-index: 2; background: var(--page); padding: 16px 18px 12px; border-bottom: 1px solid var(--grid); display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.drawer .dh h2 { margin: 0 0 2px; font-size: 18px; }
+.drawer .db { padding: 14px 18px 32px; display: grid; gap: 18px; }
+.dsec h3 { font-size: 13.5px; margin: 0 0 8px; font-weight: 650; }
+.dstats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.dstat .l { color: var(--ink-2); font-size: 12px; margin-bottom: 2px; }
+.vgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.vcell { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--surface); }
+.vcell .n { font-size: 20px; font-weight: 650; }
+.vcell .l { font-size: 12px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
+.vcell .l i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.dlist { list-style: none; margin: 0; padding: 0; }
+.dlist li { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; padding: 8px 0; border-top: 1px solid var(--grid); }
+.dlist li:first-child { border-top: 0; }
+.dlist .d { color: var(--ink-2); font-size: 12.5px; grid-column: 2; }
+.drow { display: grid; grid-template-columns: 50px 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.dacts { display: flex; flex-wrap: wrap; gap: 8px; }
+/* modo pantalla */
+.tvbar { display: none; position: relative; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--grid); margin-bottom: 14px; }
+.tvbar .grow { flex: 1; }
+.tvbar .prog { position: absolute; left: 0; bottom: -1px; height: 3px; background: var(--accent); width: 100%; transform-origin: left; animation: tvprog 20s linear forwards; }
+@keyframes tvprog { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.tv .tvbar { display: flex; }
+.tv .filters, .tv .tabs, .tv .top .sub, .tv .demo-banner { display: none; }
+.tv .tvbar #tv-title { font-size: 22px; }
+.tv body, html.tv body { font-size: 16px; }
+.tv .app { max-width: 1760px; }
+.tv .todo .btn, .tv .card .tools { display: none; }
+.tv .hero .num { font-size: 72px; }
+.tv .more { display: none; }
+
+</style>
+</head>
+<body>
+<div id="demo-banner" class="demo-banner" hidden>DATOS DE EJEMPLO: no son los valores reales de tus equipos. Abrí la página desde tu servidor, sin ?demo=1, para ver los datos en vivo.</div>
+<div class="app" id="app">
+  <div class="top">
+    <div>
+      <h1><svg class="logo" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="7" fill="var(--accent)"/><path d="M4.5 14h4l2.2-6 3.4 11 2.3-5h4.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Panel de decisiones</h1>
+      <div class="sub">Zabbix + Wazuh · infraestructura del datacenter</div>
+    </div>
+    <div class="sources" id="sources" aria-live="polite"></div>
+  </div>
+  <div class="tvbar" id="tvbar"><strong id="tv-title"></strong><span class="muted" id="tv-clock"></span><span class="grow"></span><span class="muted">Rota cada 20 s</span><button class="btn" id="tv-exit" type="button">Salir (Esc)</button><i class="prog" id="tv-prog"></i></div>
+  <div class="tabs" role="tablist" id="tabs" aria-label="Vistas"></div>
+  <div class="filters" id="filters">
+    <div><label id="lbl-win">Ventana de tendencia</label>
+      <span class="seg" role="radiogroup" aria-labelledby="lbl-win" id="win"></span></div>
+    <div id="host-wrap"><label for="host">Equipo</label><select id="host"></select></div>
+    <div id="q-wrap"><label for="q" class="sr-only">Buscar equipo o problema</label><input id="q" type="search" placeholder="Buscar equipo o problema  ( / )" autocomplete="off"></div>
+    <div id="sev-wrap"><label id="lbl-sev">Mostrar</label><span class="seg" role="radiogroup" aria-labelledby="lbl-sev" id="sevf"></span></div>
+    <span class="grow"></span>
+    <span class="updated" id="updated"></span>
+    <button class="btn" id="auto" type="button" aria-pressed="false" title="Actualiza los datos solo, cada 5 minutos">Auto: apagado</button>
+    <button class="btn" id="tvbtn" type="button" title="Vista limpia que rota entre pestañas, para dejar en un monitor">Modo pantalla</button>
+    <button class="btn" id="refresh" type="button">Actualizar</button>
+    <button class="btn icon" id="theme" type="button" aria-label="Cambiar tema claro u oscuro" title="Tema"></button>
+  </div>
+  <main id="main" tabindex="-1"></main>
+</div>
+<div id="tip" class="tip" role="tooltip"></div>
+
+<script>
+'use strict';
+/* ===== helpers de DOM (todo con textContent: nunca innerHTML con datos) ===== */
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function setAttrs(el, attrs, isSvg) {
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.setAttribute('class', v);
+    else if (k === 'text') el.textContent = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+    else if (isSvg && (k === 'fill' || k === 'stroke') && typeof v === 'string' && v.includes('var(')) el.style.setProperty(k, v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+}
+function addKids(el, kids) {
+  for (const k of kids.flat(Infinity)) {
+    if (k == null || k === false) continue;
+    el.append(k.nodeType ? k : document.createTextNode(String(k)));
+  }
+}
+const h = (tag, attrs, ...kids) => { const el = document.createElement(tag); setAttrs(el, attrs); addKids(el, kids); return el; };
+const s = (tag, attrs, ...kids) => { const el = document.createElementNS(SVGNS, tag); setAttrs(el, attrs, true); addKids(el, kids); return el; };
+
+/* ===== formato (es) ===== */
+const _nf = {};
+function fmt(n, d = 0) {
+  if (n == null || !isFinite(n)) return '—';
+  const k = d; _nf[k] = _nf[k] || new Intl.NumberFormat('es', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return _nf[k].format(n);
+}
+const pct = (n, d = 0) => (n == null ? '—' : fmt(n, d) + ' %');
+const fmtDay = ts => new Date(ts * 1000).toLocaleDateString('es', { day: 'numeric', month: 'short' });
+const fmtDT = ts => new Date(ts * 1000).toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+function ago(ts) {
+  if (!ts) return '—';
+  const d = Math.max(0, Date.now() / 1000 - ts);
+  if (d < 90) return 'recién';
+  if (d < 3600) return Math.round(d / 60) + ' min';
+  if (d < 86400) return Math.round(d / 3600) + ' h';
+  return Math.round(d / 86400) + ' d';
+}
+function fmtDays(d) {
+  if (d == null) return 'estable';
+  if (d <= 0) return 'ya';
+  if (d < 90) return Math.round(d) + ' d';
+  if (d < 730) return '≈ ' + Math.round(d / 30.4) + ' meses';
+  return '≈ ' + fmt(d / 365, 1) + ' años';
+}
+function addDays(days) { return Math.floor(Date.now() / 1000 + days * 86400); }
+const sum = a => a.reduce((x, y) => x + y, 0);
+function median(a) {
+  if (!a.length) return NaN;
+  const b = [...a].sort((x, y) => x - y), m = b.length >> 1;
+  return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2;
+}
+function percentile(a, p) {
+  if (!a.length) return null;
+  const b = [...a].sort((x, y) => x - y);
+  return b[Math.min(b.length - 1, Math.floor(p * b.length))];
+}
+const lc = x => String(x == null ? '' : x).toLowerCase();
+
+/* ===== proyección: Theil–Sen (mediana de pendientes, robusta a picos) ===== */
+function theilSen(pts) {
+  const P = pts.filter(p => p[1] != null && isFinite(p[1]));
+  if (P.length < 7) return null;
+  const t0 = P[0][0];
+  const xs = P.map(p => (p[0] - t0) / 86400), ys = P.map(p => p[1]);
+  const sl = [];
+  for (let i = 0; i < xs.length; i++) for (let j = i + 1; j < xs.length; j++) {
+    const dx = xs[j] - xs[i];
+    if (dx > 0) sl.push((ys[j] - ys[i]) / dx);
+  }
+  const slope = median(sl);
+  const inter = median(ys.map((y, i) => y - slope * xs[i]));
+  const mean = sum(ys) / ys.length;
+  let tot = 0, res = 0;
+  ys.forEach((y, i) => { tot += (y - mean) ** 2; res += (y - (inter + slope * xs[i])) ** 2; });
+  const r2 = tot < 1e-9 ? 1 : Math.max(0, 1 - res / tot);
+  const lastX = xs[xs.length - 1];
+  return {
+    slope, inter, t0, r2, lastT: P[P.length - 1][0], now: inter + slope * lastX,
+    at: ts => inter + slope * ((ts - t0) / 86400),
+    conf: r2 >= 0.7 ? 'alta' : r2 >= 0.4 ? 'media' : 'baja',
+  };
+}
+/* días hasta cruzar `level`; null = no cruza (estable/baja) o más de 5 años */
+function daysTo(fit, level, cur, eps = 0.01) {
+  if (!fit) return null;
+  const anchor = Math.max(fit.now, cur == null ? fit.now : cur);
+  if (anchor >= level) return 0;
+  if (fit.slope < eps) return null;
+  const d = (level - anchor) / fit.slope;
+  return d > 1825 ? null : d;
+}
+
+/* ===== tooltip ===== */
+const tipEl = () => document.getElementById('tip');
+function showTip(ev, head, rows) {
+  const t = tipEl();
+  t.replaceChildren();
+  if (head) t.append(h('div', { class: 'h', text: head }));
+  for (const r of rows) {
+    const k = r.color ? h('i', { class: 'k' + (r.rect ? ' rect' : ''), style: r.rect ? { background: r.color } : { borderTopColor: r.color, borderTopStyle: r.dash ? 'dashed' : 'solid' } }) : null;
+    t.append(h('div', { class: 'r' }, k, h('span', { text: r.name }), r.value != null ? h('b', { text: r.value }) : null));
+  }
+  t.style.display = 'block';
+  moveTip(ev);
+}
+function moveTip(ev) {
+  const t = tipEl(), pad = 14;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  const w = t.offsetWidth, hh = t.offsetHeight;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+  if (y + hh > innerHeight - 8) y = ev.clientY - hh - pad;
+  t.style.left = Math.max(8, x) + 'px';
+  t.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { tipEl().style.display = 'none'; }
+function withTip(el, fn) {
+  el.addEventListener('pointermove', ev => { const r = fn(ev); if (r) showTip(ev, r.head, r.rows); else hideTip(); });
+  el.addEventListener('pointerleave', hideTip);
+  return el;
+}
+
+/* ===== iconos de estado (forma + etiqueta, nunca solo color) ===== */
+const SEV = {
+  crit: { label: 'Crítico', color: 'var(--sev-crit)' },
+  high: { label: 'Alto', color: 'var(--sev-high)' },
+  med: { label: 'Medio', color: 'var(--sev-med)' },
+  low: { label: 'Bajo', color: 'var(--sev-low)' },
+  ok: { label: 'OK', color: 'var(--good)' },
+  unk: { label: 'Sin dato', color: 'var(--muted)' },
+};
+function sevIcon(kind) {
+  const c = (SEV[kind] || SEV.unk).color;
+  const svg = s('svg', { width: 12, height: 12, viewBox: '0 0 12 12', 'aria-hidden': 'true' });
+  if (kind === 'crit') svg.append(s('circle', { cx: 6, cy: 6, r: 5.5, fill: c }), s('path', { d: 'M4 4l4 4M8 4l-4 4', stroke: '#fff', 'stroke-width': 1.6, 'stroke-linecap': 'round' }));
+  else if (kind === 'high') svg.append(s('path', { d: 'M6 .8l5.4 9.6H.6z', fill: c }));
+  else if (kind === 'med') svg.append(s('path', { d: 'M6 .6l5.4 5.4L6 11.4.6 6z', fill: c }));
+  else if (kind === 'low') svg.append(s('circle', { cx: 6, cy: 6, r: 3.6, fill: c }));
+  else if (kind === 'ok') svg.append(s('circle', { cx: 6, cy: 6, r: 5.5, fill: c }), s('path', { d: 'M3.4 6.2l1.9 1.9 3.4-3.7', stroke: '#fff', 'stroke-width': 1.6, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+  else svg.append(s('circle', { cx: 6, cy: 6, r: 4.6, fill: 'none', stroke: c, 'stroke-width': 1.6 }), s('path', { d: 'M4 6h4', stroke: c, 'stroke-width': 1.6 }));
+  return svg;
+}
+function sevChip(kind, label) {
+  return h('span', { class: 'sev' }, sevIcon(kind), label || (SEV[kind] || SEV.unk).label);
+}
+
+/* ===== bloques de UI ===== */
+function legendEl(items) {
+  return h('div', { class: 'legend' }, items.map(it => h('span', {}, h('i', { class: it.kind || 'rect', style: it.kind === 'line' || it.kind === 'dash' ? { borderTopColor: it.color } : { background: it.color } }), it.name)));
+}
+function tbl(cols, rows, opts = {}) {
+  const t = h('table', {},
+    h('thead', {}, h('tr', {}, cols.map(c => h('th', { class: c.num ? 'num' : '', scope: 'col', text: c.h })))),
+    h('tbody', {}, rows.map(r => {
+      const tr = h('tr', { class: opts.click ? 'click' : '' }, cols.map(c => h('td', { class: c.num ? 'num' : '' }, c.f(r))));
+      if (opts.click) tr.addEventListener('click', () => opts.click(r));
+      return tr;
+    })));
+  if (!rows.length) return h('div', { class: 'empty', text: opts.empty || 'Sin datos.' });
+  return h('div', { class: 'tablewrap' }, t);
+}
+function card({ title, sub, cls = 'col-12', body, table }) {
+  const tools = h('div', { class: 'tools' });
+  const content = h('div', { class: 'cbody' }, body);
+  const sec = h('section', { class: 'card ' + cls }, h('header', {}, h('div', {}, h('h2', { text: title }), sub ? h('div', { class: 'sub', text: sub }) : null), tools), content);
+  if (table) {
+    let on = false;
+    const b = h('button', { class: 'link-btn', type: 'button', 'aria-pressed': 'false', text: 'Ver tabla' });
+    b.addEventListener('click', () => {
+      on = !on;
+      b.setAttribute('aria-pressed', String(on));
+      b.textContent = on ? 'Ver gráfico' : 'Ver tabla';
+      content.replaceChildren(on ? table() : body);
+    });
+    tools.append(b);
+  }
+  return sec;
+}
+function errCard(title, msg, cls = 'col-12') {
+  return h('section', { class: 'card ' + cls }, h('header', {}, h('div', {}, h('h2', { text: title }))),
+    h('div', { class: 'callout err' }, sevIcon('crit'), h('div', {}, 'No se pudo leer esta fuente: ' + msg)));
+}
+function meter(v, warn = 80, crit = 90) {
+  if (v == null) return h('span', { class: 'muted', text: '—' });
+  const k = v >= crit ? 'c' : v >= warn ? 'w' : '';
+  return h('div', { class: 'meter' }, h('div', { class: 'bar' }, h('i', { class: k, style: { width: Math.max(1, Math.min(100, v)) + '%' } })), h('span', { text: pct(v) }));
+}
+function kpi({ label, value, unit, delta, spark: sp, icon }) {
+  return h('section', { class: 'card col-3' }, h('div', { class: 'kpi' },
+    h('div', { class: 'label' }, icon || null, label),
+    h('div', { class: 'value' }, value, unit ? h('small', { text: unit }) : null),
+    delta ? h('div', { class: 'delta', text: delta }) : null,
+    sp ? h('div', { class: 'spark' }, sp) : null));
+}
+
+/* ===== gráficos SVG propios ===== */
+function niceTicks(min, max, n = 5) {
+  const span = max - min || 1, raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p, t = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) t.push(+v.toFixed(10));
+  return t;
+}
+function responsive(render) {
+  const el = h('div', { class: 'chart' });
+  let last = 0;
+  new ResizeObserver(() => {
+    const w = Math.floor(el.clientWidth);
+    if (w > 0 && w !== last) { last = w; el.replaceChildren(render(w)); }
+  }).observe(el);
+  return el;
+}
+function axisX(svg, m, W, H, xmin, xmax, X, pw) {
+  svg.append(s('line', { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: 'var(--axis)', 'stroke-width': 1 }));
+  const nx = Math.max(2, Math.min(8, Math.floor(pw / 96)));
+  for (let i = 0; i <= nx; i++) {
+    const t = xmin + (xmax - xmin) * i / nx;
+    svg.append(s('text', { x: X(t), y: H - 7, 'text-anchor': i === 0 ? 'start' : i === nx ? 'end' : 'middle', fill: 'var(--muted)', text: fmtDay(t) }));
+  }
+}
+
+/* cfg: { height, series:[{name,color,pts:[[t,v]],dash}], yMin,yMax,yFmt,thresholds:[{y,label,color}], nowT, label } */
+function lineChart(W, cfg) {
+  const H = cfg.height || 260, m = { l: cfg.yLabelW || 46, r: 14, t: 16, b: 26 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const all = cfg.series.flatMap(x => x.pts);
+  if (!all.length) return h('div', { class: 'empty', text: 'Sin datos en esta ventana.' });
+  const xmin = Math.min(...all.map(p => p[0])), xmax = Math.max(...all.map(p => p[0]));
+  const ymin = cfg.yMin ?? 0;
+  let ymax = cfg.yMax ?? Math.max(...all.map(p => p[1]), ...(cfg.thresholds || []).map(t => t.y)) * 1.08;
+  if (!(ymax > ymin)) ymax = ymin + 1;
+  const X = t => m.l + (xmax === xmin ? pw / 2 : (t - xmin) / (xmax - xmin) * pw);
+  const Y = v => m.t + ph - (v - ymin) / (ymax - ymin) * ph;
+  const yf = cfg.yFmt || (v => fmt(v));
+  const svg = s('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': cfg.label || '' });
+  niceTicks(ymin, ymax).forEach(v => svg.append(
+    s('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: 'var(--grid)', 'stroke-width': 1 }),
+    s('text', { x: m.l - 8, y: Y(v) + 4, 'text-anchor': 'end', fill: 'var(--muted)', text: yf(v) })));
+  axisX(svg, m, W, H, xmin, xmax, X, pw);
+  (cfg.thresholds || []).forEach(t => svg.append(
+    s('line', { x1: m.l, x2: W - m.r, y1: Y(t.y), y2: Y(t.y), stroke: t.color, 'stroke-width': 1.25, 'stroke-dasharray': '2 4' }),
+    s('text', { x: W - m.r - 4, y: Y(t.y) - 5, 'text-anchor': 'end', fill: 'var(--ink-2)', text: t.label })));
+  if (cfg.nowT && cfg.nowT > xmin && cfg.nowT < xmax) {
+    svg.append(s('line', { x1: X(cfg.nowT), x2: X(cfg.nowT), y1: m.t, y2: H - m.b, stroke: 'var(--axis)', 'stroke-width': 1 }),
+      s('text', { x: X(cfg.nowT) + 5, y: m.t + 10, fill: 'var(--muted)', text: 'hoy' }));
+  }
+  cfg.series.forEach(x => {
+    if (!x.pts.length) return;
+    const d = x.pts.map((p, i) => (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join('');
+    svg.append(s('path', { d, fill: 'none', stroke: x.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'stroke-dasharray': x.dash ? '6 4' : null }));
+  });
+  const hov = s('g', { style: { display: 'none' }, 'pointer-events': 'none' });
+  const vline = s('line', { y1: m.t, y2: H - m.b, stroke: 'var(--axis)', 'stroke-width': 1 });
+  hov.append(vline);
+  const dots = cfg.series.map(x => { const c = s('circle', { r: 4, fill: x.color, stroke: 'var(--surface)', 'stroke-width': 2 }); hov.append(c); return c; });
+  svg.append(hov);
+  const over = s('rect', { x: m.l, y: m.t, width: pw, height: ph, fill: 'transparent' });
+  svg.append(over);
+  withTip(over, ev => {
+    const box = svg.getBoundingClientRect();
+    const t = xmin + (ev.clientX - box.left - m.l) / pw * (xmax - xmin);
+    const rows = [];
+    let tx = null;
+    cfg.series.forEach((x, i) => {
+      let best = null;
+      for (const p of x.pts) if (!best || Math.abs(p[0] - t) < Math.abs(best[0] - t)) best = p;
+      if (best && Math.abs(best[0] - t) <= 43200 * 1.5) {
+        rows.push({ name: x.name, value: (cfg.tipFmt || yf)(best[1]), color: x.color, dash: x.dash });
+        dots[i].setAttribute('cx', X(best[0])); dots[i].setAttribute('cy', Y(best[1])); dots[i].style.display = '';
+        tx = tx ?? best[0];
+      } else dots[i].style.display = 'none';
+    });
+    if (!rows.length) { hov.style.display = 'none'; return null; }
+    vline.setAttribute('x1', X(tx)); vline.setAttribute('x2', X(tx));
+    hov.style.display = '';
+    return { head: fmtDay(tx), rows };
+  });
+  over.addEventListener('pointerleave', () => { hov.style.display = 'none'; });
+  return svg;
+}
+
+/* columnas apiladas por día. cfg: { data:[{ts,...}], keys:[{k,name,color}], height } */
+function colStack(W, cfg) {
+  const H = cfg.height || 220, m = { l: 40, r: 8, t: 10, b: 26 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b, D = cfg.data;
+  if (!D.length) return h('div', { class: 'empty', text: 'Sin datos en esta ventana.' });
+  const tot = d => sum(cfg.keys.map(k => d[k.k] || 0));
+  const ymax = Math.max(1, ...D.map(tot)) * 1.05;
+  const Y = v => m.t + ph - v / ymax * ph;
+  const step = pw / D.length, bw = Math.max(2, Math.min(22, step * 0.62));
+  const svg = s('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': cfg.label || '' });
+  niceTicks(0, ymax, 4).forEach(v => svg.append(
+    s('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: 'var(--grid)', 'stroke-width': 1 }),
+    s('text', { x: m.l - 8, y: Y(v) + 4, 'text-anchor': 'end', fill: 'var(--muted)', text: fmt(v) })));
+  svg.append(s('line', { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: 'var(--axis)', 'stroke-width': 1 }));
+  const every = Math.ceil(D.length / Math.max(2, Math.floor(pw / 80)));
+  D.forEach((d, i) => {
+    const cx = m.l + step * (i + 0.5);
+    let acc = 0;
+    cfg.keys.forEach(k => {
+      const v = d[k.k] || 0;
+      if (!v) return;
+      const y1 = Y(acc + v), y0 = Y(acc);
+      const hh = Math.max(1.5, y0 - y1 - (acc ? 2 : 0));
+      svg.append(s('rect', { x: cx - bw / 2, y: y0 - (acc ? 2 : 0) - hh, width: bw, height: hh, rx: Math.min(2, bw / 2), fill: k.color }));
+      acc += v;
+    });
+    if (i % every === 0) svg.append(s('text', { x: cx, y: H - 7, 'text-anchor': 'middle', fill: 'var(--muted)', text: fmtDay(d.ts) }));
+  });
+  const hl = s('rect', { y: m.t, width: step, height: ph, fill: 'var(--hover)', style: { display: 'none' }, 'pointer-events': 'none' });
+  svg.append(hl);
+  const over = s('rect', { x: m.l, y: m.t, width: pw, height: ph, fill: 'transparent' });
+  svg.append(over);
+  withTip(over, ev => {
+    const box = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(D.length - 1, Math.floor((ev.clientX - box.left - m.l) / step)));
+    hl.setAttribute('x', m.l + step * i); hl.style.display = '';
+    const d = D[i];
+    return { head: fmtDay(d.ts), rows: [...cfg.keys.map(k => ({ name: k.name, value: fmt(d[k.k] || 0), color: k.color, rect: true })), ...(cfg.keys.length > 1 ? [{ name: 'Total', value: fmt(tot(d)) }] : [])] };
+  });
+  over.addEventListener('pointerleave', () => { hl.style.display = 'none'; });
+  return svg;
+}
+
+/* barras horizontales en HTML. rows:[{label,value,text,color,icon,tip:{head,rows}}] */
+function hbar(rows, { max, track = false } = {}) {
+  const mx = max ?? Math.max(1e-9, ...rows.map(r => r.value));
+  return h('div', { class: 'hbar' }, rows.map(r => {
+    const bar = h('div', { class: 'area' + (track ? ' track' : '') }, h('i', { class: 'b', style: { width: Math.max(r.value > 0 ? 0.8 : 0, Math.min(100, r.value / mx * 100)) + '%', background: r.color || 'var(--s1)' } }));
+    const row = h('div', { class: 'hb' }, h('div', { class: 'l', title: r.label, text: r.label }), bar, h('div', { class: 'v' }, r.icon || null, r.text));
+    if (r.tip) withTip(row, () => r.tip);
+    return row;
+  }));
+}
+/* barras apiladas horizontales. rows:[{label,segs:[{v,color,name}],text}] */
+function stackBars(rows, { max } = {}) {
+  const mx = max ?? Math.max(1, ...rows.map(r => sum(r.segs.map(x => x.v))));
+  return h('div', { class: 'hbar' }, rows.map(r => {
+    const t = sum(r.segs.map(x => x.v));
+    const area = h('div', { class: 'area stack', style: { width: '100%' } }, h('div', { class: 'segs', style: { width: Math.max(t > 0 ? 0.8 : 0, t / mx * 100) + '%' } },
+      r.segs.filter(x => x.v > 0).map(x => h('i', { style: { flexGrow: x.v, background: x.color } }))));
+    const row = h('div', { class: 'hb' }, h('div', { class: 'l', title: r.label, text: r.label }), area, h('div', { class: 'v', text: r.text ?? fmt(t) }));
+    withTip(row, () => ({ head: r.label, rows: [...r.segs.map(x => ({ name: x.name, value: fmt(x.v), color: x.color, rect: true })), { name: 'Total', value: fmt(t) }, ...(r.extra || [])] }));
+    return row;
+  }));
+}
+function spark(pts, w = 120, hgt = 28) {
+  if (pts.length < 2) return null;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const X = t => 2 + (x1 === x0 ? 0 : (t - x0) / (x1 - x0)) * (w - 4), Y = v => hgt - 3 - (y1 === y0 ? 0.5 : (v - y0) / (y1 - y0)) * (hgt - 6);
+  return s('svg', { width: w, height: hgt, viewBox: `0 0 ${w} ${hgt}`, 'aria-hidden': 'true' },
+    s('path', { d: pts.map((p, i) => (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join(''), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+}
+
+'use strict';
+/* Datos de EJEMPLO. Nombres de equipos reales, números inventados.
+   Mismas formas que devuelve api.php. Solo se usan con ?demo=1 o abriendo el archivo directo. */
+const DEMO = (() => {
+  function rng(seedStr) {
+    let a = 0;
+    for (const c of seedStr) a = (a * 31 + c.charCodeAt(0)) >>> 0;
+    return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const midnight = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return Math.floor(d / 1000); };
+  const dayTs = (days, i) => midnight() - (days - 1 - i) * 86400;
+  const r1 = x => Math.round(x * 10) / 10;
+
+  const SERVERS = [
+    ['AD', '192.168.10.8'], ['AD2', '192.168.10.23'], ['PMS', '192.168.10.30'], ['FILESERVER', '192.168.10.31'],
+    ['ERP', '192.168.10.32'], ['INTEGRACIONES', '192.168.10.33'], ['ANTIVIRUS', '192.168.10.34'], ['PVE1', '192.168.10.5'],
+    ['PVE2', '192.168.10.6'], ['PBS', '192.168.10.7'], ['LINUX-BACKUP', '192.168.10.35'], ['zabbix-server', '192.168.10.240'],
+    ['wazuh-server', '192.168.10.57'],
+  ];
+  const NET = [['ROUTER-BORDE', '192.168.10.1']];
+
+  // host, tipo, etiqueta, valor hoy, pendiente por día, ruido, [serrucho: cada N días baja X]
+  const SERIES = [
+    ['AD', 'disk', 'C:', 41, 0.03, 0.2], ['AD2', 'disk', 'C:', 38, 0.02, 0.2],
+    ['PMS', 'disk', 'C:', 58, 0.04, 0.2], ['PMS', 'disk', 'D:', 83.5, 0.22, 0.3],
+    ['FILESERVER', 'disk', 'D:', 89, 0.28, 0.25], ['ERP', 'disk', 'C:', 67, 0.06, 0.2],
+    ['INTEGRACIONES', 'disk', 'C:', 74, 0.02, 0.3], ['ANTIVIRUS', 'disk', 'C:', 55, 0.05, 0.2],
+    ['PVE1', 'disk', '/', 32, 0.01, 0.1], ['PVE1', 'disk', '/rpool/data', 61, 0.12, 0.2],
+    ['PVE2', 'disk', '/', 30, 0.01, 0.1], ['PVE2', 'disk', '/rpool/data', 57, 0.1, 0.2],
+    ['PBS', 'disk', '/mnt/datastore', 87.5, 0.11, 0.2],
+    ['LINUX-BACKUP', 'disk', '/backups', 76, 0.16, 0.3, [20, 7]],
+    ['zabbix-server', 'disk', '/', 52, 0.35, 0.15], ['wazuh-server', 'disk', '/', 79, 0.3, 0.15],
+  ];
+  const RAM = { AD: 55, 'AD2': 40, PMS: 91, FILESERVER: 62, ERP: 78, INTEGRACIONES: 70, ANTIVIRUS: 66, PVE1: 74, PVE2: 69, PBS: 41, 'LINUX-BACKUP': 35, 'zabbix-server': 58, 'wazuh-server': 88 };
+  const CPU = { AD: 9, 'AD2': 5, PMS: 38, FILESERVER: 14, ERP: 31, INTEGRACIONES: 22, ANTIVIRUS: 17, PVE1: 41, PVE2: 33, PBS: 8, 'LINUX-BACKUP': 6, 'zabbix-server': 24, 'wazuh-server': 52 };
+
+  function pts(days, key, end, slope, noise, kind, saw) {
+    const R = rng(key), out = [];
+    for (let i = 0; i < days; i++) {
+      const back = days - 1 - i;
+      let v = end - slope * back + (R() - 0.5) * 2 * noise;
+      if (saw) v += saw[1] * (0.5 - (back % saw[0]) / saw[0]); // serrucho: sube y baja por limpiezas periódicas
+      const mx = kind === 'cpu' ? v * 1.9 + 6 : kind === 'ram' ? v + 3 : v + 0.1;
+      out.push([dayTs(days, i), r1(Math.max(0, Math.min(100, v))), r1(Math.max(0, Math.min(100, mx)))]);
+    }
+    return out;
+  }
+
+  function capacity(days) {
+    const series = [];
+    for (const [host, kind, label, now, slope, noise, saw] of SERIES) {
+      series.push({ host, kind, label, now, pts: pts(days, host + label, now, slope, noise, kind, saw) });
+    }
+    for (const [h0] of SERVERS) {
+      series.push({ host: h0, kind: 'ram', label: '', now: RAM[h0], pts: pts(days, h0 + 'ram', RAM[h0], h0 === 'wazuh-server' ? 0.05 : 0.01, 2.2, 'ram') });
+      series.push({ host: h0, kind: 'cpu', label: '', now: CPU[h0], pts: pts(days, h0 + 'cpu', CPU[h0], 0.01, 3, 'cpu') });
+    }
+    const R = rng('links');
+    const link = (name, cap, endIn, slope, endOut) => {
+      const inn = [], out = [];
+      for (let i = 0; i < days; i++) {
+        const wd = new Date(dayTs(days, i) * 1000).getDay(), wk = wd === 0 || wd === 6 ? 0.82 : 1;
+        const a = (endIn - slope * (days - 1 - i)) * wk + (R() - 0.5) * 24;
+        const b = (endOut - slope * 0.3 * (days - 1 - i)) * wk + (R() - 0.5) * 10;
+        inn.push([dayTs(days, i), r1(a * 0.7), r1(a)]);
+        out.push([dayTs(days, i), r1(b * 0.7), r1(b)]);
+      }
+      return { label: name, capacity_mbps: cap, in: inn, out };
+    };
+    return { generated: Date.now() / 1000, days, zabbix: { ok: true, series, links: [link('ISP principal', 500, 372, 0.75, 118), link('ISP respaldo', 200, 46, 0.05, 12)] } };
+  }
+
+  function availability(days) {
+    const up = { AD: 41, 'AD2': 12, PMS: 168, FILESERVER: 83, ERP: 27, INTEGRACIONES: 9, ANTIVIRUS: 55, PVE1: 96, PVE2: 96, PBS: 33, 'LINUX-BACKUP': 140, 'zabbix-server': 61, 'wazuh-server': 19, 'ROUTER-BORDE': 204 };
+    const av = { AD: 99.99, 'AD2': 99.9, PMS: 99.96, FILESERVER: 99.93, ERP: 99.82, INTEGRACIONES: 99.71, ANTIVIRUS: 99.98, PVE1: 100, PVE2: 100, PBS: 99.4, 'LINUX-BACKUP': 100, 'zabbix-server': 100, 'wazuh-server': 99.88, 'ROUTER-BORDE': 99.995 };
+    const hosts = [...SERVERS.map(x => [...x, false]), ...NET.map(x => [...x, true])].map(([n, ip, net]) => ({
+      host: n, name: n, ips: [ip], groups: [net ? 'Network Devices' : (n.startsWith('PVE') ? 'Proxmox' : 'Servers')], network: net,
+      state: 'up', uptime_s: up[n] * 86400 + 3600 * 5, avail_pct: av[n],
+    }));
+    const now = Math.floor(Date.now() / 1000);
+    return {
+      generated: now, days,
+      zabbix: {
+        ok: true, hosts,
+        problems: [
+          { host: 'LINUX-BACKUP', name: 'Espacio libre en /backups menor al 25 %', severity: 4, clock: now - 3600 * 30 },
+          { host: 'FILESERVER', name: 'Espacio libre en D: menor al 15 %', severity: 3, clock: now - 86400 * 3 },
+          { host: 'wazuh-server', name: 'Uso de memoria alto (> 85 %)', severity: 3, clock: now - 3600 * 9 },
+          { host: 'PMS', name: 'Uso de memoria alto (> 90 %)', severity: 3, clock: now - 86400 * 2 },
+        ],
+        ifaces: [{ host: 'ROUTER-BORDE', name: 'sfp-sfpplus2 (Switch-Core-B)', up: false }],
+      },
+      wazuh: { ok: true, agents: agents() },
+    };
+  }
+
+  const PC_NAMES = ['CONTABILIDAD', 'COMPRAS', 'VENTAS', 'GERENCIA', 'RRHH', 'LOGISTICA', 'SOPORTE', 'RECEPCION', 'ALMACEN', 'ADMIN', 'CAJA', 'TALLER'];
+  function agents() {
+    const now = Math.floor(Date.now() / 1000), out = [];
+    let id = 1;
+    for (const [n, ip] of SERVERS) {
+      if (n.startsWith('PVE')) continue;
+      out.push({ id: String(id++).padStart(3, '0'), name: n, ip, status: n === 'ANTIVIRUS' ? 'disconnected' : 'active', last_keepalive: n === 'ANTIVIRUS' ? now - 86400 * 4 : now - 20, os: /^(PBS|LINUX|zabbix|wazuh)/.test(n) ? 'Ubuntu' : 'Microsoft Windows Server 2022', os_version: '', agent_version: 'Wazuh v4.14.0' });
+    }
+    const R = rng('pcs');
+    for (let i = 0; i < 42; i++) {
+      const dis = i % 7 === 3;
+      out.push({ id: String(id++).padStart(3, '0'), name: 'PC-' + PC_NAMES[i % PC_NAMES.length] + (i >= PC_NAMES.length ? '-' + (1 + Math.floor(i / PC_NAMES.length)) : ''), ip: '192.168.20.' + (10 + i), status: dis ? 'disconnected' : 'active', last_keepalive: now - (dis ? 86400 * (1 + Math.floor(R() * 3)) : 30), os: 'Microsoft Windows 11 Pro', os_version: '', agent_version: 'Wazuh v4.14.0' });
+    }
+    return out;
+  }
+
+  const VULNS = { PMS: [14, 61, 120, 9], INTEGRACIONES: [9, 40, 71, 6], ERP: [4, 22, 48, 3], AD: [3, 18, 40, 2], 'AD2': [0, 5, 22, 1], FILESERVER: [2, 20, 44, 3], ANTIVIRUS: [1, 9, 25, 2], PBS: [0, 2, 11, 0], 'LINUX-BACKUP': [0, 3, 9, 1], 'zabbix-server': [0, 1, 6, 0], 'wazuh-server': [0, 4, 13, 1] };
+  function patches() {
+    const ag = [];
+    for (const [n, c] of Object.entries(VULNS)) ag.push({ name: n, os: /^(PBS|LINUX|zabbix|wazuh)/.test(n) ? 'Ubuntu 22.04' : 'Microsoft Windows Server 2022', counts: { critical: c[0], high: c[1], medium: c[2], low: c[3] } });
+    const R = rng('pcvuln');
+    agents().filter(a => a.name.startsWith('PC-')).forEach(a => ag.push({ name: a.name, os: 'Microsoft Windows 11 Pro', counts: { critical: Math.floor(R() * 4), high: 2 + Math.floor(R() * 14), medium: 6 + Math.floor(R() * 30), low: Math.floor(R() * 5) } }));
+    const pcs = ag.filter(a => a.name.startsWith('PC-')).map(a => a.name);
+    const cves = [
+      ['CVE-2026-20011', 'critical', 9.8, ['PMS', 'INTEGRACIONES', 'ERP', 'AD', 'FILESERVER', 'AD2']],
+      ['CVE-2026-20347', 'critical', 9.1, ['PMS', 'INTEGRACIONES', 'ERP']],
+      ['CVE-2026-19882', 'critical', 8.8, ['AD', 'AD2', 'ANTIVIRUS']],
+      ['CVE-2026-20590', 'high', 8.1, ['PMS', 'INTEGRACIONES', 'ERP', 'FILESERVER', 'AD']],
+      ['CVE-2026-18764', 'high', 7.8, ['wazuh-server', 'zabbix-server', 'PBS', 'LINUX-BACKUP']],
+      ['CVE-2026-23863', 'high', 7.5, pcs.slice(0, 12)],
+      ['CVE-2026-17210', 'high', 7.4, ['PMS', 'FILESERVER']],
+      ['CVE-2026-21955', 'high', 7.2, ['ERP', 'INTEGRACIONES']],
+    ].map(([id, severity, score, agents2]) => ({ id, severity, score, agents: agents2 }));
+    const hist = [];
+    const now = Math.floor(Date.now() / 1000);
+    for (let i = 29; i >= 0; i--) {
+      const patch = i < 12 ? 11 : 0;
+      hist.push({ ts: now - i * 86400, totals: { critical: 64 - patch + Math.round((R() - 0.5) * 3), high: 430 - patch * 3 + Math.round((R() - 0.5) * 12), medium: 1210 + Math.round((R() - 0.5) * 30), low: 90 } });
+    }
+    return { generated: now, wazuh: { ok: true, agents: ag, cves, history: hist } };
+  }
+
+  function perimeter(days, R, now) {
+    const by_day = [];
+    for (let i = 0; i < days; i++) {
+      const ts = dayTs(days, i), wd = new Date(ts * 1000).getDay();
+      const spike = i === Math.floor(days * 0.7) ? 2.6 : 1;
+      by_day.push({ ts, n: Math.round((170 + R() * 130) * (wd === 0 || wd === 6 ? 0.8 : 1) * spike) });
+    }
+    const t = (k, n) => ({ key: k, n });
+    const total = by_day.reduce((a, d) => a + d.n, 0);
+    return {
+      ok: true,
+      scan: {
+        total, last24: by_day[days - 1].n, unique_ips: 61 + Math.round(days * 1.7), by_day,
+        top_ip: [
+          { ip: '203.0.113.41', n: Math.round(total * 0.07), ports: [t('22', 410), t('23', 300), t('2222', 102)], last: now - 1800 },
+          { ip: '198.51.100.77', n: Math.round(total * 0.05), ports: [t('3389', 260), t('445', 90), t('1433', 40)], last: now - 3600 * 3 },
+          { ip: '203.0.113.9', n: Math.round(total * 0.04), ports: [t('5060', 190), t('5061', 60)], last: now - 3600 * 9 },
+          { ip: '198.51.100.203', n: Math.round(total * 0.03), ports: [t('8080', 120), t('80', 80), t('443', 60)], last: now - 3600 * 14 },
+          { ip: '203.0.113.150', n: Math.round(total * 0.02), ports: [t('23', 110)], last: now - 86400 * 2 },
+          { ip: '192.0.2.88', n: Math.round(total * 0.015), ports: [t('8291', 55), t('8728', 20)], last: now - 86400 * 3 },
+        ],
+        top_port: [t('23', Math.round(total * 0.19)), t('22', Math.round(total * 0.15)), t('3389', Math.round(total * 0.09)), t('1433', Math.round(total * 0.06)), t('8080', Math.round(total * 0.05)), t('5060', Math.round(total * 0.04)), t('445', Math.round(total * 0.035)), t('80', Math.round(total * 0.03)), t('8291', Math.round(total * 0.008))],
+        by_link: [t('Enlace principal', Math.round(total * 0.88)), t('Enlace secundario', Math.round(total * 0.12))],
+      },
+      insist: { total: 9, last24: 1, ips: [{ ip: '203.0.113.41', n: 5, last: now - 1800 }, { ip: '198.51.100.77', n: 3, last: now - 86400 * 2 }, { ip: '203.0.113.9', n: 1, last: now - 86400 * 6 }] },
+      router: {
+        fail_total: 6, fail_last24: 0, ok_total: 38, ok_last24: 4,
+        fail_by_ip: [t('192.168.99.14', 4), t('192.168.10.97', 2)], fail_by_user: [t('admin', 5), t('operador', 1)],
+        recent: [
+          { ts: now - 3600 * 2, ok: true, user: 'admin', ip: '192.168.99.14', via: 'winbox' },
+          { ts: now - 3600 * 5, ok: true, user: 'admin', ip: '192.168.10.97', via: 'winbox' },
+          { ts: now - 86400 * 2 - 3600, ok: false, user: 'admin', ip: '192.168.99.14', via: 'winbox' },
+          { ts: now - 86400 * 2 - 3500, ok: true, user: 'admin', ip: '192.168.99.14', via: 'winbox' },
+          { ts: now - 86400 * 5, ok: true, user: 'operador', ip: '192.168.10.97', via: 'winbox' },
+        ],
+      },
+    };
+  }
+
+  function security(days) {
+    const R = rng('sec' + days), by_day = [], failed = [];
+    for (let i = 0; i < days; i++) {
+      const ts = dayTs(days, i), wd = new Date(ts * 1000).getDay(), wk = wd === 0 || wd === 6 ? 0.5 : 1;
+      const spike = i === Math.floor(days * 0.62) ? 5 : 1;
+      const high = Math.round((10 + R() * 14) * (i > days * 0.7 ? 1.4 : 1));
+      const med = Math.round((55 + R() * 60) * wk);
+      by_day.push({ ts, n: high + med + 1500, high, medium: med, low: Math.round(1300 + R() * 900) });
+      failed.push([ts, Math.round((14 + R() * 26) * (spike > 1 ? 1 : wk) * spike)]);
+    }
+    const t = (k, n) => ({ key: k, n });
+    const now = Math.floor(Date.now() / 1000);
+    return {
+      generated: now, days,
+      wazuh: {
+        ok: true, by_day, last24: { high: by_day[days - 1].high, medium: by_day[days - 1].medium, low: 1710 },
+        failed: {
+          by_day: failed,
+          by_agent: [t('AD', 412), t('AD2', 133), t('FILESERVER', 86), t('ERP', 21), t('PMS', 9)],
+          by_ip: [t('192.168.20.37', 205), t('192.168.20.41', 88), t('192.168.20.19', 61), t('192.168.10.32', 30), t('-', 24)],
+          by_user: [t('svc-backup', 188), t('jperez', 120), t('mgomez', 74), t('recepcion1', 52), t('administrator', 26)],
+        },
+        lockouts: { total: 7, last24: 1, recent: [
+          { ts: now - 3600 * 5, user: 'jperez', caller: 'PC-CONTABILIDAD', agent: 'AD' },
+          { ts: now - 86400 * 4, user: 'mgomez', caller: 'PC-RRHH', agent: 'AD' },
+          { ts: now - 86400 * 9, user: 'svc-backup', caller: 'LINUX-BACKUP', agent: 'AD' },
+        ] },
+        top_rules: [
+          { id: '23506', desc: 'CVE detectado que afecta al paquete (severidad crítica)', level: 13, n: 340 },
+          { id: '204', desc: 'Búfer de eventos del agente saturado', level: 12, n: 71 },
+          { id: '60115', desc: 'Cuenta de usuario bloqueada por intentos fallidos', level: 9, n: 7 },
+          { id: '60110', desc: 'Cuenta de usuario modificada', level: 8, n: 19 },
+          { id: '550', desc: 'Checksum de integridad modificado', level: 7, n: 12 },
+        ],
+        flooded: [{ agent: 'PMS', n: 58, last: now - 3600 * 22 }, { agent: 'INTEGRACIONES', n: 13, last: now - 86400 * 3 }],
+      },
+      perimeter: perimeter(days, R, now),
+    };
+  }
+
+  function meta() {
+    return {
+      version: 'demo', generated: Math.floor(Date.now() / 1000), timezone: 'America/Asuncion',
+      roles: {
+        AD: { role: 'dc', weight: 3, label: 'Controlador de dominio' }, 'AD2': { role: 'dc', weight: 3, label: 'Controlador de dominio (secundario)' },
+        PMS: { role: 'db', weight: 5, label: 'PMS / Oracle' }, FILESERVER: { role: 'file', weight: 3, label: 'Archivos' },
+        ERP: { role: 'app', weight: 2, label: 'ERP' }, INTEGRACIONES: { role: 'app', weight: 2, label: 'Integraciones' },
+        ANTIVIRUS: { role: 'infra', weight: 2, label: 'Antivirus' }, PVE1: { role: 'infra', weight: 4, label: 'Proxmox' }, PVE2: { role: 'infra', weight: 4, label: 'Proxmox' },
+        PBS: { role: 'backup', weight: 3, label: 'Backups (PBS)' }, 'LINUX-BACKUP': { role: 'backup', weight: 3, label: 'Copias del PMS' },
+        'zabbix-server': { role: 'monitor', weight: 2, label: 'Zabbix' }, 'wazuh-server': { role: 'monitor', weight: 2, label: 'Wazuh' },
+      },
+      aliases: {},
+      links: [{ label: 'ISP principal', capacity_mbps: 500 }, { label: 'ISP respaldo', capacity_mbps: 200 }],
+    };
+  }
+
+  return {
+    get(view, days) {
+      const f = { meta, capacity: () => capacity(days), availability: () => availability(days), patches, security: () => security(days) }[view];
+      return new Promise(res => setTimeout(() => res(JSON.parse(JSON.stringify(f()))), 120));
+    },
+  };
+})();
+
+'use strict';
+/* ===== estado, modelo y motor de "qué atender hoy" ===== */
+const VIEWS = [
+  { id: 'resumen', name: 'Resumen', win: false, host: false },
+  { id: 'capacidad', name: 'Capacidad', win: true, host: true },
+  { id: 'parches', name: 'Parches', win: false, host: true },
+  { id: 'disponibilidad', name: 'Disponibilidad', win: true, host: true },
+  { id: 'seguridad', name: 'Seguridad', win: true, host: false },
+];
+const state = { raw: {}, anon: false, view: 'resumen', days: 60, host: 'all', demo: false, data: {}, busy: false, loaded: false };
+const API_VIEW = { meta: 'meta', capacity: 'capacity', availability: 'availability', patches: 'patches', security: 'security' };
+const SEV_COL = { critical: 'var(--sev-crit)', high: 'var(--sev-high)', medium: 'var(--sev-med)', low: 'var(--sev-low)' };
+const RANK = { crit: 4, high: 3, med: 2, low: 1 };
+
+const lowerKeys = o => { const r = {}; for (const [k, v] of Object.entries(o || {})) r[lc(k)] = v; return r; };
+const norm = n => lc(n).split('.')[0];
+
+function partOf(view, src) {
+  const v = state.data[view];
+  if (!v) return { ok: false, error: 'sin respuesta' };
+  if (v.fatal) return { ok: false, error: v.fatal };
+  return v[src] || { ok: false, error: 'sin datos' };
+}
+
+function analyzeSeries(sr) {
+  const avg = sr.pts.map(p => [p[0], p[1]]);
+  const mx = sr.pts.map(p => [p[0], p[2]]);
+  const fit = theilSen(avg);
+  const cur = sr.now != null ? sr.now : (avg.length ? avg[avg.length - 1][1] : null);
+  const o = { host: sr.host, kind: sr.kind, label: sr.label, now: cur, fit, avg, mx };
+  if (sr.kind === 'disk') {
+    o.d90 = daysTo(fit, 90, cur);
+    o.d100 = daysTo(fit, 100, cur);
+    o.perMonth = fit ? fit.slope * 30.4 : null;
+  } else {
+    // RAM: pico diario. CPU: promedio diario (un pico de un minuto no es falta de CPU)
+    o.p95 = percentile(sr.pts.map(p => p[sr.kind === 'cpu' ? 1 : 2]), 0.95);
+  }
+  return o;
+}
+function diskTier(o) {
+  if (o.now != null && o.now >= 90) return 'crit';
+  if (o.d100 != null && o.d100 <= 30) return 'crit';
+  if (o.d100 != null && o.d100 <= 90) return 'high';
+  if (o.d100 != null && o.d100 <= 180) return 'med';
+  if (o.now != null && o.now >= 80) return 'med';
+  return 'ok';
+}
+const byUrgency = (a, b) => ((a.d100 ?? 1e9) - (b.d100 ?? 1e9)) || ((b.now ?? 0) - (a.now ?? 0));
+
+function buildModel() {
+  const D = state.data;
+  const meta = D.meta && !D.meta.fatal ? D.meta : { roles: {}, aliases: {} };
+  const roles = lowerKeys(meta.roles);
+  const aliasZ = {};
+  for (const [k, v] of Object.entries(meta.aliases || {})) aliasZ[norm(k)] = norm(v);
+  const zh = partOf('availability', 'zabbix').ok ? D.availability.zabbix.hosts : [];
+  const ags = partOf('availability', 'wazuh').ok ? D.availability.wazuh.agents : [];
+  const ents = [], byKey = new Map(), byIp = new Map(), byAlias = new Map();
+  const mk = name => {
+    const e = { name, key: norm(name), zbx: null, agent: null, vuln: null, os: '', disks: [], ram: null, cpu: null, net: false, role: null, ips: [] };
+    ents.push(e); byKey.set(e.key, e); return e;
+  };
+  for (const z of zh) {
+    const e = mk(z.host);
+    e.zbx = z; e.net = !!z.network; e.ips = z.ips || [];
+    e.ips.forEach(ip => byIp.set(ip, e));
+    if (aliasZ[e.key]) byAlias.set(aliasZ[e.key], e);
+  }
+  const resolve = (name, ip) => byKey.get(norm(name)) || byAlias.get(norm(name)) || (ip && byIp.get(ip)) || null;
+  const pcs = [], pcMap = new Map();
+  for (const a of ags) {
+    let e = resolve(a.name, a.ip);
+    if (!e && roles[norm(a.name)]) e = mk(a.name);
+    if (e) e.agent = a;
+    else { const p = { name: a.name, agent: a, vuln: null }; pcs.push(p); pcMap.set(norm(a.name), p); }
+  }
+  for (const v of (partOf('patches', 'wazuh').ok ? D.patches.wazuh.agents : [])) {
+    let e = resolve(v.name);
+    if (!e && roles[norm(v.name)]) e = mk(v.name);
+    if (e) { e.vuln = v.counts; e.os = v.os || ''; }
+    else {
+      let p = pcMap.get(norm(v.name));
+      if (!p) { p = { name: v.name, agent: null, vuln: null }; pcs.push(p); pcMap.set(norm(v.name), p); }
+      p.vuln = v.counts;
+    }
+  }
+  const disks = [], rams = [], cpus = [];
+  for (const sr of (partOf('capacity', 'zabbix').ok ? D.capacity.zabbix.series : [])) {
+    const e = resolve(sr.host) || mk(sr.host);
+    const o = analyzeSeries(sr); o.ent = e;
+    if (sr.kind === 'disk') { e.disks.push(o); disks.push(o); }
+    else if (sr.kind === 'ram') { e.ram = o; rams.push(o); }
+    else { e.cpu = o; cpus.push(o); }
+  }
+  for (const e of ents) {
+    e.role = roles[e.key] || (e.agent && roles[norm(e.agent.name)]) || null;
+    e.weight = e.role ? (e.role.weight || 1) : (e.net ? 3 : 1);
+    e.label = e.role ? (e.role.label || '') : (e.net ? 'Red' : '');
+  }
+  // equipos marcados 'ignore' => true en config (p. ej. un servidor en baja) no entran en ninguna cuenta
+  for (let i = ents.length - 1; i >= 0; i--) if (ents[i].role && ents[i].role.ignore) ents.splice(i, 1);
+  ents.sort((a, b) => (b.weight - a.weight) || a.name.localeCompare(b.name));
+  // el color sigue a la entidad (host + volumen), no a su posición en el ranking
+  const colorOf = new Map();
+  [...disks].sort((a, b) => (a.ent.name + a.label).localeCompare(b.ent.name + b.label)).forEach((o, i) => colorOf.set(o, 'var(--s' + ((i % 8) + 1) + ')'));
+  const links = [];
+  if (partOf('capacity', 'zabbix').ok) {
+    for (const L of (D.capacity.zabbix.links || [])) {
+      const inn = (L.in || []).map(p => [p[0], p[2]]), out = (L.out || []).map(p => [p[0], p[2]]);
+      const cap = L.capacity_mbps || null;
+      const fit = theilSen(inn), cur = inn.length ? inn[inn.length - 1][1] : null;
+      links.push({ label: L.label, cap, inn, out, fit, cur, d80: cap ? daysTo(fit, cap * 0.8, cur, cap * 0.0004) : null, d100: cap ? daysTo(fit, cap, cur, cap * 0.0004) : null });
+    }
+  }
+  const alive = o => ents.includes(o.ent);
+  return { ents, pcs, disks: disks.filter(alive), rams: rams.filter(alive), cpus: cpus.filter(alive), links, colorOf, roles };
+}
+
+function nextPatchTuesday() {
+  const now = new Date();
+  for (let m = 0; m < 3; m++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + m, 1);
+    const first = ((2 - d.getDay() + 7) % 7) + 1;
+    const pt = new Date(d.getFullYear(), d.getMonth(), first + 7, 23, 59, 59);
+    if (pt >= now) return pt;
+  }
+  return now;
+}
+const sevFromZbx = n => (n >= 5 ? 'crit' : n === 4 ? 'high' : n === 3 ? 'med' : 'low');
+
+function buildTodo(M) {
+  const D = state.data, items = [];
+  const add = (sev, title, detail, go, host, score = 0) => items.push({ sev, title, detail, go, host: host || 'all', score });
+  // fuentes caídas: sin esto el panel "se ve bien" sin estarlo
+  [['Zabbix', 'capacity', 'zabbix'], ['Zabbix', 'availability', 'zabbix'], ['API de Wazuh', 'availability', 'wazuh'], ['Índice de Wazuh', 'patches', 'wazuh'], ['Índice de Wazuh', 'security', 'wazuh']].forEach(([n, v, src]) => {
+    const p = partOf(v, src);
+    if (!p.ok && !items.some(i => i.title.startsWith('No se pudo leer ' + n))) add('high', 'No se pudo leer ' + n, 'El panel puede estar incompleto: ' + p.error, v === 'capacity' ? 'capacidad' : v === 'availability' ? 'disponibilidad' : v === 'patches' ? 'parches' : 'seguridad', null, 50);
+  });
+  for (const e of M.ents) {
+    if (e.zbx && e.zbx.state === 'down') add('crit', e.name + ' no responde', 'Zabbix lo marca caído' + (e.label ? ' (' + e.label + ')' : '') + '.', 'disponibilidad', e.name, 100 * e.weight);
+    if (e.agent && e.agent.status !== 'active') add(e.weight >= 3 ? 'high' : 'med', e.name + ': agente de Wazuh ' + (e.agent.status === 'disconnected' ? 'desconectado' : e.agent.status), 'Sin el agente no se ven alertas ni vulnerabilidades de este equipo. Último contacto hace ' + ago(e.agent.last_keepalive) + '.', 'disponibilidad', e.name, 20 * e.weight);
+  }
+  for (const p of (partOf('availability', 'zabbix').ok ? D.availability.zabbix.problems : []).slice(0, 8)) {
+    if (p.severity >= 3) add(sevFromZbx(p.severity), p.host + ': ' + p.name, 'Problema activo en Zabbix desde hace ' + ago(p.clock) + '.', 'disponibilidad', p.host, p.severity * 5);
+  }
+  for (const o of M.disks) {
+    const t = diskTier(o);
+    if (t === 'ok' || (t !== 'crit' && o.fit && o.fit.conf === 'baja')) continue;
+    const bits = ['Hoy ' + pct(o.now)];
+    if (o.perMonth != null && o.perMonth > 0.05) bits.push('crece ' + fmt(o.perMonth, 1) + ' puntos/mes');
+    if (o.d100 != null && o.d100 > 0) bits.push('llega al 100 % en ' + fmtDays(o.d100) + ' (≈ ' + fmtDay(addDays(o.d100)) + ')');
+    if (o.fit) bits.push('confianza ' + o.fit.conf);
+    add(t, o.ent.name + ' ' + o.label + ' — disco ' + (t === 'crit' ? 'por llenarse' : 'a vigilar'), bits.join(' · ') + '.', 'capacidad', o.ent.name, (100 - (o.d100 == null ? 400 : Math.min(400, o.d100))) * o.ent.weight / 10);
+  }
+  for (const o of M.rams) if (o.p95 != null && o.p95 >= 85) add(o.p95 >= 92 ? 'high' : 'med', o.ent.name + ': memoria casi al límite', 'En el 5 % de los días más cargados llegó al ' + pct(o.p95) + ' (pico diario).', 'capacidad', o.ent.name, o.p95 * o.ent.weight / 10);
+  for (const o of M.cpus) if (o.p95 != null && o.p95 >= 85) add('med', o.ent.name + ': CPU exigida', 'Carga promedio diaria que se supera solo el 5 % de los días: ' + pct(o.p95) + '.', 'capacidad', o.ent.name, o.p95 * o.ent.weight / 10);
+  for (const L of M.links) {
+    if (L.cap && L.cur != null && L.cur >= L.cap * 0.8) add('high', 'Enlace ' + L.label + ' al ' + pct(L.cur / L.cap * 100) + ' de su capacidad', 'Pico diario de entrada ' + fmt(L.cur) + ' de ' + fmt(L.cap) + ' Mbps.', 'capacidad', 'all', 60);
+    else if (L.d80 != null && L.d80 <= 120) add('med', 'Enlace ' + L.label + ' llega al 80 % en ' + fmtDays(L.d80), 'Con la tendencia actual (≈ ' + fmtDay(addDays(L.d80)) + '). Conviene pedir ampliación antes.', 'capacidad', 'all', 40);
+  }
+  const vul = M.ents.filter(e => e.vuln && e.vuln.critical > 0).sort((a, b) => b.weight * b.vuln.critical - a.weight * a.vuln.critical);
+  vul.slice(0, 4).forEach(e => add(e.weight >= 3 && e.vuln.critical >= 5 ? 'crit' : 'high', e.name + ': ' + e.vuln.critical + ' vulnerabilidades críticas', e.vuln.high + ' altas más. ' + (e.label ? e.label + '. ' : '') + 'Ver orden de parcheo sugerido.', 'parches', e.name, e.weight * e.vuln.critical));
+  if (vul.length > 4) add('med', vul.length - 4 + ' equipos más con vulnerabilidades críticas', vul.slice(4, 9).map(e => e.name).join(', ') + (vul.length > 9 ? '…' : ''), 'parches', 'all', 5);
+  const sec = partOf('security', 'wazuh');
+  if (sec.ok) {
+    for (const f of sec.flooded) if (f.last && Date.now() / 1000 - f.last < 72 * 3600) add('med', f.agent + ': búfer del agente saturado', f.n + ' veces en la ventana, la última hace ' + ago(f.last) + '. Se pierden eventos mientras pasa.', 'seguridad', 'all', 10);
+    if (sec.lockouts.last24 > 0) add('med', sec.lockouts.last24 + ' bloqueo(s) de cuenta en 24 h', 'Revisá si hay credenciales viejas guardadas en algún equipo (cmdkey /list) o un ataque de contraseñas.', 'seguridad', 'all', 15);
+    const fd = sec.failed.by_day.map(p => p[1]);
+    if (fd.length > 7) {
+      const last = fd[fd.length - 1], med = median(fd.slice(0, -1));
+      if (last >= 40 && last >= 3 * Math.max(1, med)) add('high', 'Pico de inicios de sesión fallidos', last + ' hoy contra una mediana de ' + fmt(med) + ' por día.', 'seguridad', 'all', 30);
+    }
+  }
+  const per = partOf('security', 'perimeter');
+  if (per.ok) {
+    const bad = dedupeAccess(per.router.recent).filter(r => !r.ok && Date.now() / 1000 - r.ts < 86400);
+    if (bad.length >= 3) add(bad.length >= 10 ? 'high' : 'med', bad.length + ' intentos fallidos de entrar al router en 24 h', 'Desde ' + [...new Set(bad.map(r => r.ip))].slice(0, 3).join(', ') + '. Si no fuiste vos ni alguien del equipo, cambiá la clave y revisá el acceso.', 'seguridad', 'all', 25);
+  }
+  const ifd = (partOf('availability', 'zabbix').ok ? D.availability.zabbix.ifaces : []).filter(i => !i.up);
+  if (ifd.length) add('med', ifd.length + ' interfaz(ces) de red caída(s)', ifd.slice(0, 4).map(i => i.host + ' ' + i.name).join(' · '), 'disponibilidad', 'all', 8);
+  const old = M.ents.filter(e => e.zbx && e.zbx.uptime_s > 90 * 86400 && e.weight >= 2 && !e.net).sort((a, b) => b.zbx.uptime_s - a.zbx.uptime_s);
+  if (old.length) add('low', old.length + ' servidor(es) sin reiniciar hace más de 90 días', old.slice(0, 4).map(e => e.name + ' (' + Math.round(e.zbx.uptime_s / 86400) + ' d)').join(' · ') + '. Suele haber parches esperando un reinicio.', 'disponibilidad', 'all', 2);
+  items.sort((a, b) => (RANK[b.sev] - RANK[a.sev]) || (b.score - a.score));
+  return items;
+}
+
+/* ===== vistas ===== */
+const hostMatch = name => state.host === 'all' || state.host === name;
+const go = (view, host) => { state.view = view; state.host = host || 'all'; location.hash = view + (state.host !== 'all' ? '/' + encodeURIComponent(state.host) : ''); };
+
+function lineLegend(items, withProj) {
+  return legendEl([...items.map(x => ({ name: x.name, color: x.color, kind: 'line' })), ...(withProj ? [{ name: 'Proyección (tendencia)', color: 'var(--ink-2)', kind: 'dash' }] : [])]);
+}
+function projPts(fit, cur, lastT, horizonDays, cap) {
+  if (!fit || fit.slope < 0.01 || cur == null) return [];
+  const out = [[lastT, cur]];
+  for (let d = 1; d <= horizonDays; d++) {
+    const v = cur + fit.slope * d;
+    out.push([lastT + d * 86400, Math.min(cap, v)]);
+    if (v >= cap) break;
+  }
+  return out;
+}
+
+function viewCapacidad(M) {
+  const part = partOf('capacity', 'zabbix');
+  if (!part.ok) return [errCard('Capacidad', part.error)];
+  const out = [];
+  const disks = M.disks.filter(o => hostMatch(o.ent.name)).sort(byUrgency);
+  const name = o => o.ent.name + ' ' + o.label;
+  const tcol = t => (t === 'crit' ? 'var(--sev-crit)' : t === 'high' ? 'var(--sev-high)' : t === 'med' ? 'var(--sev-med)' : 'var(--s1)');
+  const confTxt = o => (o.fit ? o.fit.conf + ' (R² ' + fmt(o.fit.r2, 2) + ')' : 'pocos datos');
+  const rows = disks.slice(0, state.host === 'all' ? 14 : 20).map(o => {
+    const t = diskTier(o);
+    return {
+      label: name(o), value: o.now ?? 0, color: tcol(t), icon: t === 'ok' ? null : sevIcon(t),
+      text: pct(o.now) + ' · ' + (o.d100 == null ? 'estable' : o.d100 === 0 ? 'sin margen' : 'llena en ' + fmtDays(o.d100)),
+      tip: { head: name(o), rows: [{ name: 'Uso hoy', value: pct(o.now, 1) }, { name: 'Tendencia', value: o.perMonth == null ? '—' : (o.perMonth >= 0 ? '+' : '') + fmt(o.perMonth, 1) + ' puntos/mes' }, { name: 'Llega al 90 %', value: fmtDays(o.d90) }, { name: 'Llega al 100 %', value: fmtDays(o.d100) }, { name: 'Confianza', value: confTxt(o) }] },
+    };
+  });
+  const volTable = () => tbl([
+    { h: 'Equipo', f: o => o.ent.name }, { h: 'Volumen', f: o => o.label },
+    { h: 'Uso hoy', f: o => meter(o.now) },
+    { h: 'Tendencia', num: true, f: o => (o.perMonth == null ? '—' : (o.perMonth >= 0 ? '+' : '') + fmt(o.perMonth, 1) + ' pts/mes') },
+    { h: '90 % en', num: true, f: o => fmtDays(o.d90) }, { h: '100 % en', num: true, f: o => fmtDays(o.d100) },
+    { h: 'Confianza', f: o => confTxt(o) },
+  ], disks, { empty: 'Sin volúmenes monitoreados.' });
+  out.push(card({
+    title: 'Discos: cuánto falta para llenarse', cls: 'col-12', sub: 'Barra = uso hoy. A la derecha, en cuántos días llegaría al 100 % si sigue la tendencia de los últimos ' + state.days + ' días.',
+    body: rows.length ? h('div', {}, hbar(rows, { max: 100, track: true }), disks.length > rows.length ? h('div', { class: 'note', text: 'Se muestran los ' + rows.length + ' más urgentes de ' + disks.length + '. Ver tabla para todos.' }) : null) : h('div', { class: 'empty', text: 'Sin volúmenes monitoreados para este filtro.' }),
+    table: volTable,
+  }));
+
+  // evolución + proyección
+  const pick = state.host === 'all' ? disks.slice(0, 5) : disks.slice(0, 8);
+  const series = [], leg = [];
+  let minV = 100, nowT = 0;
+  const pickColor = new Map();
+  [...pick].sort((a, b) => (a.ent.name + a.label).localeCompare(b.ent.name + b.label)).forEach((o, i) => pickColor.set(o, 'var(--s' + ((i % 8) + 1) + ')'));
+  pick.forEach(o => {
+    const col = pickColor.get(o);
+    series.push({ name: name(o), color: col, pts: o.avg });
+    leg.push({ name: name(o), color: col });
+    if (o.avg.length) { minV = Math.min(minV, ...o.avg.map(p => p[1])); nowT = Math.max(nowT, o.avg[o.avg.length - 1][0]); }
+    const pp = o.avg.length ? projPts(o.fit, o.avg[o.avg.length - 1][1], o.avg[o.avg.length - 1][0], state.days, 100) : [];
+    if (pp.length > 1) series.push({ name: name(o) + ' (proyección)', color: col, pts: pp, dash: true });
+  });
+  const yMin = Math.max(0, Math.floor((minV - 6) / 10) * 10);
+  out.push(card({
+    title: state.host === 'all' ? 'Evolución y proyección de los 5 discos más urgentes' : 'Evolución y proyección: ' + state.host,
+    sub: 'Línea llena = histórico; punteada = tendencia hacia adelante (mediana de pendientes, no se deja engañar por un pico aislado).', cls: 'col-12',
+    body: pick.length ? h('div', {}, lineLegend(leg, true), responsive(W => lineChart(W, {
+      height: 300, series, yMin, yMax: 100, nowT, yFmt: v => fmt(v) + ' %', tipFmt: v => pct(v, 1), label: 'Uso de disco con proyección',
+      thresholds: [{ y: 90, label: '90 %', color: 'var(--sev-high)' }, { y: 100, label: 'Lleno', color: 'var(--sev-crit)' }],
+    }))) : h('div', { class: 'empty', text: 'Sin datos.' }),
+    table: volTable,
+  }));
+
+  // RAM y CPU
+  const rc = (list, title, sub) => {
+    const rs = list.filter(o => hostMatch(o.ent.name) && o.p95 != null).sort((a, b) => b.p95 - a.p95).slice(0, 12).map(o => ({
+      label: o.ent.name, value: o.p95, color: o.p95 >= 90 ? 'var(--sev-crit)' : o.p95 >= 80 ? 'var(--sev-med)' : 'var(--s1)', icon: o.p95 >= 90 ? sevIcon('crit') : o.p95 >= 80 ? sevIcon('med') : null, text: pct(o.p95),
+      tip: { head: o.ent.name, rows: [{ name: o.kind === 'cpu' ? 'Promedio diario típico (p95)' : 'Pico diario típico (p95)', value: pct(o.p95, 1) }, { name: 'Promedio', value: pct(o.avg.length ? sum(o.avg.map(p => p[1])) / o.avg.length : null, 1) }, { name: 'Hoy', value: pct(o.now, 1) }] },
+    }));
+    return card({ title, sub, cls: 'col-6', body: rs.length ? hbar(rs, { max: 100, track: true }) : h('div', { class: 'empty', text: 'Sin datos.' }) });
+  };
+  out.push(rc(M.rams, 'Memoria RAM', 'Pico diario que se supera solo el 5 % de los días.'));
+  out.push(rc(M.cpus, 'CPU', 'Carga promedio diaria que se supera solo el 5 % de los días.'));
+
+  // enlaces
+  if (state.host === 'all') {
+    if (!M.links.length) out.push(card({ title: 'Enlaces de internet', cls: 'col-12', body: h('div', { class: 'callout' }, sevIcon('unk'), 'No hay enlaces configurados. Agregalos en "links" de config.php (equipo, nombre de la interfaz y capacidad contratada) para ver su uso y cuándo se saturan.') }));
+    for (const L of M.links) {
+      const horizon = Math.max(30, state.days);
+      const lastT = L.inn.length ? L.inn[L.inn.length - 1][0] : 0;
+      const pp = L.cap ? projPts(L.fit, L.cur, lastT, horizon, L.cap * 1.1) : [];
+      const ser = [{ name: 'Entrada (pico diario)', color: 'var(--s1)', pts: L.inn }, { name: 'Salida (pico diario)', color: 'var(--s2)', pts: L.out }];
+      if (pp.length > 1) ser.push({ name: 'Entrada (proyección)', color: 'var(--s1)', pts: pp, dash: true });
+      const th = L.cap ? [{ y: L.cap * 0.8, label: '80 %', color: 'var(--sev-high)' }, { y: L.cap, label: 'Capacidad ' + fmt(L.cap) + ' Mbps', color: 'var(--sev-crit)' }] : [];
+      out.push(card({
+        title: 'Enlace ' + L.label, cls: 'col-12',
+        sub: L.cap ? 'Capacidad ' + fmt(L.cap) + ' Mbps · hoy ' + fmt(L.cur) + ' Mbps (' + pct(L.cur / L.cap * 100) + ') · ' + (L.d80 == null ? 'no llega al 80 % con la tendencia actual' : L.d80 === 0 ? 'ya superó el 80 %' : 'llega al 80 % en ' + fmtDays(L.d80)) : 'Sin capacidad configurada.',
+        body: L.inn.length ? h('div', {}, lineLegend(ser.filter(x => !x.dash), !!pp.length), responsive(W => lineChart(W, { height: 260, series: ser, yMin: 0, yMax: L.cap ? L.cap * 1.1 : undefined, nowT: lastT, yFmt: v => fmt(v), tipFmt: v => fmt(v, 1) + ' Mbps', label: 'Tráfico del enlace', thresholds: th }))) : h('div', { class: 'empty', text: 'Sin datos de tráfico para este enlace. Revisá "match" en config.php.' }),
+        table: () => tbl([{ h: 'Día', f: p => fmtDay(p[0]) }, { h: 'Entrada (Mbps)', num: true, f: p => fmt(p[1], 1) }, { h: 'Salida (Mbps)', num: true, f: p => { const o = L.out.find(q => q[0] === p[0]); return o ? fmt(o[1], 1) : '—'; } }], [...L.inn].reverse().slice(0, 60)),
+      }));
+    }
+  }
+  return out;
+}
+
+function viewParches(M) {
+  const part = partOf('patches', 'wazuh');
+  if (!part.ok) return [errCard('Parches', part.error)];
+  const out = [];
+  const all = M.ents.filter(e => e.vuln && e.vuln.critical + e.vuln.high > 0).sort((a, b) => ((b.weight * b.vuln.critical) - (a.weight * a.vuln.critical)) || (b.vuln.high - a.vuln.high));
+  const shown = all.filter(e => hostMatch(e.name));
+  const seg = c => [{ v: c.critical, color: SEV_COL.critical, name: 'Críticas' }, { v: c.high, color: SEV_COL.high, name: 'Altas' }];
+  const rows = shown.map(e => ({ label: e.name, segs: seg(e.vuln), text: e.vuln.critical + ' crít · ' + e.vuln.high + ' altas', extra: [{ name: 'Medias', value: fmt(e.vuln.medium) }, { name: 'Bajas', value: fmt(e.vuln.low) }] }));
+  if (state.host === 'all' && M.pcs.length) {
+    const t = M.pcs.reduce((a, p) => { if (p.vuln) { a.critical += p.vuln.critical; a.high += p.vuln.high; a.medium += p.vuln.medium; a.low += p.vuln.low; } return a; }, { critical: 0, high: 0, medium: 0, low: 0 });
+    rows.push({ label: 'PCs (' + M.pcs.length + ')', segs: seg(t), text: t.critical + ' crít · ' + t.high + ' altas', extra: [{ name: 'Medias', value: fmt(t.medium) }, { name: 'Bajas', value: fmt(t.low) }] });
+  }
+  out.push(card({
+    title: 'Vulnerabilidades críticas y altas por equipo', cls: 'col-12', sub: 'Ordenado por criticidad del equipo × cantidad de críticas. Las medias y bajas están en el detalle de cada barra.',
+    body: rows.length ? h('div', {}, legendEl([{ name: 'Críticas', color: SEV_COL.critical }, { name: 'Altas', color: SEV_COL.high }]), stackBars(rows)) : h('div', { class: 'callout' }, sevIcon('ok'), 'Sin vulnerabilidades críticas ni altas para este filtro.'),
+    table: () => tbl([{ h: 'Equipo', f: r => r.label }, { h: 'Críticas', num: true, f: r => r.segs[0].v }, { h: 'Altas', num: true, f: r => r.segs[1].v }, { h: 'Medias', num: true, f: r => r.extra[0].value }, { h: 'Bajas', num: true, f: r => r.extra[1].value }], rows),
+  }));
+
+  // orden de parcheo
+  const pt = nextPatchTuesday(), inDays = Math.max(0, Math.ceil((pt - new Date()) / 86400000));
+  const stage = (pred) => all.filter(pred);
+  const fmtList = l => l.map(e => e.name + ' (' + e.vuln.critical + ' crít, ' + e.vuln.high + ' altas)').join(' · ');
+  const steps = [];
+  const s1 = stage(e => ['app', 'monitor'].includes(e.role && e.role.role) || (!e.role && !e.net) || (e.role && e.role.role === 'infra' && e.weight <= 2));
+  const s2 = stage(e => e.role && (['file', 'backup'].includes(e.role.role) || (e.role.role === 'infra' && e.weight > 2)));
+  const s3 = stage(e => e.role && e.role.role === 'dc').sort((a, b) => /new|sc/i.test(b.name) - /new|sc/i.test(a.name));
+  const s4 = stage(e => e.role && e.role.role === 'db');
+  if (s1.length) steps.push(['Primero: los de menor impacto (sirven de prueba)', fmtList(s1), 'Si algo sale mal acá, no se cae el negocio. Reiniciá y mirá Zabbix 24 h antes de seguir.']);
+  if (s2.length) steps.push(['Archivos, respaldos y virtualización', fmtList(s2), 'Antes de tocar un nodo de Proxmox, verificá que el otro aguante sus VMs y que el último respaldo en PBS sea reciente.']);
+  if (s3.length) steps.push(['Controladores de dominio, de a uno', fmtList(s3), 'Primero el secundario. Confirmá replicación (repadmin /replsummary) y que los equipos sigan autenticando antes de pasar al otro.']);
+  if (s4.length) steps.push(['Base de datos: lo último y con red de seguridad', fmtList(s4), 'Hacé primero una imagen completa del sistema (no alcanza con las copias de la base). Elegí una ventana fuera del horario de los respaldos y avisá a operación.']);
+  if (state.host === 'all' && M.pcs.some(p => p.vuln && p.vuln.critical > 0)) steps.push(['PCs: por Windows Update / WSUS', M.pcs.filter(p => p.vuln && p.vuln.critical > 0).length + ' PCs con críticas', 'Se resuelve en tandas. Si una crítica sigue tras actualizar, puede ser falso positivo: comparar versión instalada contra la que reporta Wazuh.']);
+  out.push(card({
+    title: 'Orden de parcheo sugerido', cls: 'col-6', sub: 'Próximo Patch Tuesday: ' + pt.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) + ' (' + (inDays === 0 ? 'hoy' : 'en ' + inDays + ' días') + ').',
+    body: steps.length && state.host === 'all' ? h('ol', { class: 'steps' }, steps.map(x => h('li', {}, h('div', { class: 't', text: x[0] }), h('div', { class: 'd', text: x[1] }), h('div', { class: 'd', text: x[2] })))) : h('div', { class: 'empty', text: state.host === 'all' ? 'No hay equipos con críticas o altas que parchear.' : 'El orden se arma con todos los equipos: elegí "Todos" en el filtro.' }),
+  }));
+
+  // CVE
+  const cves = part.cves.map(c => ({ ...c, list: c.agents.filter(a => { const e = M.ents.find(x => norm(x.name) === norm(a) || (x.agent && norm(x.agent.name) === norm(a))); return state.host === 'all' || (e && e.name === state.host); }) })).filter(c => c.list.length).sort((a, b) => (b.list.length - a.list.length) || ((b.score || 0) - (a.score || 0))).slice(0, 10);
+  out.push(card({
+    title: 'CVE que más equipos afectan', cls: 'col-6', sub: 'Un parche que cierra varios de estos a la vez rinde más.',
+    body: tbl([
+      { h: 'CVE', f: c => c.id }, { h: 'Sev.', f: c => sevChip(c.severity === 'critical' ? 'crit' : 'high') },
+      { h: 'CVSS', num: true, f: c => (c.score == null ? '—' : fmt(c.score, 1)) }, { h: 'Equipos', num: true, f: c => c.list.length },
+      { h: 'Cuáles', f: c => h('span', { class: 'muted', text: c.list.slice(0, 3).join(', ') + (c.list.length > 3 ? ' +' + (c.list.length - 3) : '') }) },
+    ], cves, { empty: 'Sin CVE críticos o altos.' }),
+  }));
+
+  // historial
+  const hist = part.history || [];
+  out.push(card({
+    title: 'Evolución de vulnerabilidades', cls: 'col-12', sub: 'Se arma con un registro diario. Si bajan las críticas después de un parcheo, está funcionando.',
+    body: hist.length >= 2 ? h('div', {}, legendEl([{ name: 'Críticas', color: SEV_COL.critical, kind: 'line' }, { name: 'Altas', color: SEV_COL.high, kind: 'line' }]),
+      responsive(W => lineChart(W, { height: 240, yMin: 0, label: 'Vulnerabilidades en el tiempo', series: [{ name: 'Críticas', color: SEV_COL.critical, pts: hist.map(x => [x.ts, x.totals.critical]) }, { name: 'Altas', color: SEV_COL.high, pts: hist.map(x => [x.ts, x.totals.high]) }] })))
+      : h('div', { class: 'callout' }, sevIcon('unk'), 'Todavía no hay historial. Programá el registro diario en el servidor (ver LEEME: "php api.php snapshot" en cron) y en unos días vas a ver la curva.'),
+    table: () => tbl([{ h: 'Fecha', f: x => fmtDay(x.ts) }, { h: 'Críticas', num: true, f: x => x.totals.critical }, { h: 'Altas', num: true, f: x => x.totals.high }], [...hist].reverse().slice(0, 60)),
+  }));
+  return out;
+}
+
+const agentChipOf = e => !e.agent ? h('span', { class: 'muted', text: e.net ? 'n/a' : 'Sin agente' }) : e.agent.status === 'active' ? sevChip('ok', 'Activo') : sevChip('high', e.agent.status === 'disconnected' ? 'Desconectado' : e.agent.status);
+
+function viewDisponibilidad(M) {
+  const part = partOf('availability', 'zabbix');
+  const out = [];
+  if (!part.ok) out.push(errCard('Disponibilidad (Zabbix)', part.error));
+  else {
+    const hosts = M.ents.filter(e => e.zbx && hostMatch(e.name));
+    const hrs = state.days * 24;
+    const withAv = hosts.filter(e => e.zbx.avail_pct != null);
+    const down = withAv.map(e => ({ e, hrs: (100 - e.zbx.avail_pct) / 100 * hrs })).filter(x => x.hrs > 0.05).sort((a, b) => b.hrs - a.hrs);
+    out.push(card({
+      title: 'Tiempo caído por equipo (últimos ' + state.days + ' días)', cls: 'col-6', sub: 'Estimado desde el historial de ping de Zabbix. Más largo = peor.',
+      body: down.length ? h('div', {}, hbar(down.slice(0, 12).map(x => ({ label: x.e.name, value: x.hrs, color: x.hrs > hrs * 0.01 ? 'var(--sev-high)' : 'var(--s1)', text: fmt(x.hrs, 1) + ' h · ' + pct(x.e.zbx.avail_pct, 2), tip: { head: x.e.name, rows: [{ name: 'Disponibilidad', value: pct(x.e.zbx.avail_pct, 3) }, { name: 'Tiempo caído', value: fmt(x.hrs, 1) + ' h' }, { name: 'Rol', value: x.e.label || '—' }] } }))),
+        h('div', { class: 'note', text: (withAv.length - down.length) + ' equipos sin caídas registradas en el período.' })) : h('div', { class: 'callout' }, sevIcon('ok'), withAv.length ? 'Ningún equipo tuvo caídas en el período.' : 'Sin historial de disponibilidad.'),
+      table: () => tbl([{ h: 'Equipo', f: e => e.name }, { h: 'Disponibilidad', num: true, f: e => pct(e.zbx.avail_pct, 3) }, { h: 'Horas caído', num: true, f: e => fmt((100 - e.zbx.avail_pct) / 100 * hrs, 1) }], withAv.sort((a, b) => a.zbx.avail_pct - b.zbx.avail_pct)),
+    }));
+    const probs = part.problems.filter(p => hostMatch(p.host));
+    out.push(card({
+      title: 'Problemas activos en Zabbix', cls: 'col-6', sub: 'Severidad media o superior.',
+      body: tbl([{ h: 'Sev.', f: p => sevChip(sevFromZbx(p.severity)) }, { h: 'Equipo', f: p => p.host }, { h: 'Problema', f: p => p.name }, { h: 'Desde', num: true, f: p => 'hace ' + ago(p.clock) }], probs, { empty: 'No hay problemas activos.' }),
+    }));
+    const order = e => (e.zbx.state === 'down' ? 0 : e.agent && e.agent.status !== 'active' ? 1 : 2);
+    const list = [...hosts].sort((a, b) => order(a) - order(b) || b.weight - a.weight || a.name.localeCompare(b.name));
+    out.push(card({
+      title: 'Equipos: estado, agente y último reinicio', cls: 'col-12', sub: 'Un servidor con muchos días sin reiniciar suele tener parches esperando.',
+      body: tbl([
+        { h: 'Equipo', f: e => [h('b', { text: e.name }), e.label ? h('div', { class: 'muted', text: e.label }) : null] },
+        { h: 'Zabbix', f: e => (e.zbx.state === 'up' ? sevChip('ok', 'Arriba') : e.zbx.state === 'down' ? sevChip('crit', 'Caído') : sevChip('unk')) },
+        { h: 'Agente Wazuh', f: agentChipOf },
+        { h: 'Sin reiniciar', num: true, f: e => (e.zbx.uptime_s == null ? '—' : Math.round(e.zbx.uptime_s / 86400) + ' d') },
+        { h: 'Disp. ' + state.days + ' d', num: true, f: e => pct(e.zbx.avail_pct, 2) },
+        { h: 'Nota', f: e => (e.zbx.uptime_s > 90 * 86400 && !e.net ? h('span', { class: 'pill', text: 'revisar reinicio pendiente' }) : null) },
+      ], list, { empty: 'Sin equipos.' }),
+    }));
+    const ifd = part.ifaces.filter(i => !i.up && hostMatch(i.host));
+    out.push(card({
+      title: 'Interfaces de red caídas', cls: 'col-6', sub: 'Se ignoran los puertos sin uso definidos en config.php.',
+      body: ifd.length ? tbl([{ h: 'Equipo', f: i => i.host }, { h: 'Interfaz', f: i => i.name }, { h: 'Estado', f: () => sevChip('med', 'Caída') }], ifd) : h('div', { class: 'callout' }, sevIcon('ok'), 'Todas las interfaces vigiladas están arriba.'),
+    }));
+  }
+  const w = partOf('availability', 'wazuh');
+  if (!w.ok) out.push(errCard('Agentes de Wazuh', w.error, 'col-6'));
+  else if (state.host === 'all') {
+    const dis = M.pcs.filter(p => p.agent && p.agent.status !== 'active').sort((a, b) => (a.agent.last_keepalive || 0) - (b.agent.last_keepalive || 0));
+    const act = M.pcs.filter(p => p.agent && p.agent.status === 'active').length;
+    out.push(card({
+      title: 'Agentes de PCs', cls: 'col-6', sub: act + ' activos · ' + dis.length + ' desconectados. Los desconectados suelen ser equipos apagados.',
+      body: dis.length ? tbl([{ h: 'PC', f: p => p.agent.name }, { h: 'IP', f: p => p.agent.ip }, { h: 'Último contacto', num: true, f: p => 'hace ' + ago(p.agent.last_keepalive) }], dis.slice(0, 8)) : h('div', { class: 'callout' }, sevIcon('ok'), 'Todas las PCs reportan.'),
+    }));
+  }
+  return out;
+}
+
+/* ===== Perímetro: conexiones desde internet y acceso al router (MikroTik por syslog) ===== */
+const PORT_NAMES = { 21: 'FTP', 22: 'SSH', 23: 'Telnet', 25: 'SMTP', 53: 'DNS', 80: 'HTTP', 110: 'POP3', 123: 'NTP', 135: 'RPC', 139: 'NetBIOS', 143: 'IMAP', 161: 'SNMP', 389: 'LDAP', 443: 'HTTPS', 445: 'SMB', 993: 'IMAPS', 1433: 'SQL Server', 1521: 'Oracle', 1723: 'PPTP', 3306: 'MySQL', 3389: 'RDP', 5060: 'SIP', 5432: 'PostgreSQL', 5900: 'VNC', 8080: 'HTTP alterno', 8291: 'WinBox', 8728: 'API MikroTik', 34567: 'DVR' };
+const portLabel = p => (PORT_NAMES[p] ? p + ' · ' + PORT_NAMES[p] : String(p));
+
+/* RouterOS registra cada acceso dos veces: se muestra una sola fila si son idénticas y seguidas */
+function dedupeAccess(rows) {
+  const out = [];
+  for (const r of rows) {
+    const p = out[out.length - 1];
+    if (p && p.ok === r.ok && p.user === r.user && p.ip === r.ip && p.via === r.via && Math.abs(p.ts - r.ts) <= 3) continue;
+    out.push(r);
+  }
+  return out;
+}
+
+function perimeterCards() {
+  const per = partOf('security', 'perimeter');
+  if (!per.ok) return [errCard('Perímetro: internet y router', per.error)];
+  const S = per.scan, I = per.insist, R = per.router, days = state.days, out = [];
+  if (!S.total && !I.total && !R.fail_total && !R.ok_total) {
+    return [card({
+      title: 'Perímetro: internet y router', cls: 'col-12', sub: 'Conexiones desde internet hacia el router y accesos a su administración.',
+      body: h('div', { class: 'callout' }, sevIcon('unk'), h('div', {}, 'Todavía no llegan eventos del MikroTik. Revisá que el router envíe syslog a Wazuh y que existan las reglas locales 100801 a 100811.')),
+    })];
+  }
+  const access = dedupeAccess(R.recent), lastOk = access.find(r => r.ok);
+  out.push(kpi({ label: 'Conexiones desde internet (24 h)', value: fmt(S.last24), delta: fmt(S.total) + ' en ' + days + ' días · ' + fmt(S.unique_ips) + ' IP distintas', spark: spark(S.by_day.map(d => [d.ts, d.n])) }));
+  out.push(kpi({ label: 'IP que insisten (24 h)', value: fmt(I.last24), delta: I.total + ' en ' + days + ' días · 10 intentos en 5 min' }));
+  out.push(kpi({ label: 'Fallos al entrar al router (24 h)', value: fmt(R.fail_last24), delta: R.fail_total + ' en ' + days + ' días' }));
+  out.push(kpi({ label: 'Último acceso al router', value: lastOk ? 'hace ' + ago(lastOk.ts) : '—', delta: lastOk ? lastOk.user + ' desde ' + (lastOk.ip || '?') : 'Sin accesos en la ventana' }));
+
+  out.push(card({
+    title: 'Conexiones nuevas desde internet por día', cls: 'col-12',
+    sub: 'Conexiones TCP nuevas hacia las IP públicas del router (regla 100810). El router registra como máximo 2 por segundo, así que son cifras mínimas. Casi todo son escáneres automáticos: mientras no haya un servicio expuesto en esos puertos no pasa nada; importa quién insiste y a qué puertos.',
+    body: responsive(W => colStack(W, { height: 180, data: S.by_day, keys: [{ k: 'n', name: 'Conexiones nuevas', color: 'var(--s1)' }], label: 'Conexiones nuevas desde internet por día' })),
+    table: () => tbl([{ h: 'Día', f: d => fmtDay(d.ts) }, { h: 'Conexiones', num: true, f: d => fmt(d.n) }], [...S.by_day].reverse()),
+  }));
+
+  const insist = new Set(I.ips.map(x => x.ip));
+  out.push(card({
+    title: 'IP que más insisten', cls: 'col-8', sub: '"Insiste" = 10 o más intentos en 5 minutos. Si una IP aparece contra puertos que sí tenés abiertos (SQL Server, por ejemplo), esa es la que importa.',
+    body: tbl([
+      { h: 'IP de origen', f: r => r.ip },
+      { h: 'Intentos', num: true, f: r => fmt(r.n) },
+      { h: 'Puertos', f: r => r.ports.map(p => portLabel(p.key)).join(', ') },
+      { h: 'Última', num: true, f: r => (r.last ? 'hace ' + ago(r.last) : '—') },
+      { h: '', f: r => (insist.has(r.ip) ? sevChip('med', 'Insiste') : '') },
+    ], S.top_ip, { empty: 'Sin conexiones en el período.' }),
+  }));
+  out.push(card({
+    title: 'Puertos más buscados', cls: 'col-4', sub: 'Lo que los escáneres intentan encontrar abierto.',
+    body: h('div', { class: 'row-gap' },
+      S.top_port.length ? hbar(S.top_port.slice(0, 8).map(x => ({ label: portLabel(x.key), value: x.n, color: 'var(--s1)', text: fmt(x.n) }))) : h('div', { class: 'muted', text: 'Sin datos' }),
+      S.by_link.length > 1 ? h('div', {}, h('div', { class: 'mini-h', text: 'Por enlace' }), hbar(S.by_link.map(x => ({ label: x.key, value: x.n, color: 'var(--s2)', text: fmt(x.n) })))) : null),
+  }));
+
+  out.push(card({
+    title: 'Acceso a la administración del router', cls: 'col-12',
+    sub: 'Reglas 100801 y 100803. WinBox solo acepta tu red interna: un intento fallido desde una IP que no reconocés merece revisarse.',
+    body: tbl([
+      { h: 'Cuándo', f: r => fmtDT(r.ts) },
+      { h: 'Resultado', f: r => (r.ok ? sevChip('ok', 'Correcto') : sevChip('high', 'Fallido')) },
+      { h: 'Usuario', f: r => r.user },
+      { h: 'Desde', f: r => r.ip || '—' },
+      { h: 'Por', f: r => r.via || '—' },
+    ], access, { empty: 'Sin accesos en el período.' }),
+  }));
+  return out;
+}
+
+function viewSeguridad() {
+  const part = partOf('security', 'wazuh');
+  if (!part.ok) return [errCard('Seguridad (Wazuh)', part.error)];
+  const out = [], P = part, days = state.days;
+  const hi = P.by_day.map(d => [d.ts, d.high]);
+  const avg = x => sum(x) / Math.max(1, x.length);
+  const fl = P.failed.by_day;
+  out.push(kpi({ label: 'Alertas altas (24 h)', value: fmt(P.last24.high), delta: 'Promedio diario ' + fmt(avg(P.by_day.map(d => d.high)), 1) + ' · nivel ≥ 12', spark: spark(hi) }));
+  out.push(kpi({ label: 'Inicios de sesión fallidos (hoy)', value: fmt(fl.length ? fl[fl.length - 1][1] : 0), delta: 'Promedio diario ' + fmt(avg(fl.map(x => x[1])), 0), spark: spark(fl) }));
+  out.push(kpi({ label: 'Bloqueos de cuenta (24 h)', value: fmt(P.lockouts.last24), delta: P.lockouts.total + ' en ' + days + ' días' }));
+  out.push(kpi({ label: 'Agentes con búfer saturado', value: fmt(P.flooded.length), delta: fmt(sum(P.flooded.map(f => f.n))) + ' eventos en ' + days + ' días' }));
+
+  const lowTotal = sum(P.by_day.map(d => d.low));
+  out.push(card({
+    title: 'Alertas importantes por día', cls: 'col-12', sub: 'Altas (nivel ≥ 12) y medias (7 a 11). Las bajas (< 7) son ruido de fondo: ' + fmt(lowTotal) + ' en el período y no se grafican.',
+    body: h('div', {}, legendEl([{ name: 'Altas (≥ 12)', color: SEV_COL.critical }, { name: 'Medias (7–11)', color: SEV_COL.medium }]),
+      responsive(W => colStack(W, { data: P.by_day, keys: [{ k: 'high', name: 'Altas (≥ 12)', color: SEV_COL.critical }, { k: 'medium', name: 'Medias (7–11)', color: SEV_COL.medium }], label: 'Alertas importantes por día' }))),
+    table: () => tbl([{ h: 'Día', f: d => fmtDay(d.ts) }, { h: 'Altas', num: true, f: d => d.high }, { h: 'Medias', num: true, f: d => d.medium }, { h: 'Bajas', num: true, f: d => d.low }], [...P.by_day].reverse()),
+  }));
+
+  const term = (list, title) => h('div', {}, h('div', { class: 'mini-h', text: title }), list.length ? hbar(list.slice(0, 6).map(x => ({ label: x.key || '(vacío)', value: x.n, color: 'var(--s1)', text: fmt(x.n) }))) : h('div', { class: 'muted', text: 'Sin datos' }));
+  out.push(card({
+    title: 'Inicios de sesión fallidos', cls: 'col-12', sub: 'Regla 60122. Un pico desde una sola IP o usuario es la señal que importa.',
+    body: h('div', { class: 'row-gap' },
+      responsive(W => colStack(W, { height: 180, data: fl.map(p => ({ ts: p[0], n: p[1] })), keys: [{ k: 'n', name: 'Fallidos', color: 'var(--s1)' }], label: 'Inicios de sesión fallidos por día' })),
+      h('div', { class: 'two' }, term(P.failed.by_agent, 'Por equipo'), term(P.failed.by_ip, 'Por IP de origen'), term(P.failed.by_user, 'Por usuario'))),
+    table: () => tbl([{ h: 'Día', f: p => fmtDay(p[0]) }, { h: 'Fallidos', num: true, f: p => p[1] }], [...fl].reverse()),
+  }));
+  out.push(card({
+    title: 'Bloqueos de cuenta recientes', cls: 'col-6', sub: 'Regla 60115.',
+    body: tbl([{ h: 'Cuándo', f: r => fmtDT(r.ts) }, { h: 'Usuario', f: r => r.user }, { h: 'Desde', f: r => r.caller || '—' }, { h: 'Controlador', f: r => r.agent }], P.lockouts.recent, { empty: 'Sin bloqueos en el período.' }),
+  }));
+  out.push(card({
+    title: 'Agentes con búfer saturado', cls: 'col-6', sub: 'Regla 204: el agente descarta eventos. Si se repite a la misma hora, algo lo satura (respaldo, tarea programada).',
+    body: P.flooded.length ? tbl([{ h: 'Equipo', f: f => f.agent }, { h: 'Veces', num: true, f: f => f.n }, { h: 'Última', num: true, f: f => (f.last ? 'hace ' + ago(f.last) : '—') }], P.flooded) : h('div', { class: 'callout' }, sevIcon('ok'), 'Ningún agente saturó su búfer.'),
+  }));
+  out.push(...perimeterCards());
+  out.push(card({
+    title: 'Reglas de nivel 7 o más que más se repiten', cls: 'col-12', sub: 'Si una regla domina, conviene ajustarla (o arreglar la causa) para que las alertas nuevas no se pierdan entre tanto ruido.',
+    body: tbl([{ h: 'Regla', f: r => r.id }, { h: 'Nivel', num: true, f: r => r.level }, { h: 'Descripción', f: r => r.desc }, { h: 'Veces', num: true, f: r => fmt(r.n) }], P.top_rules, { empty: 'Sin alertas de nivel 7 o más.' }),
+  }));
+  return out;
+}
+
+const VIEW_FN = { resumen: viewResumen, capacidad: viewCapacidad, parches: viewParches, disponibilidad: viewDisponibilidad, seguridad: viewSeguridad };
+
+/* ===== carga, render y arranque ===== */
+async function fetchView(view, days, fresh) {
+  if (state.demo) return DEMO.get(view, days);
+  const q = new URLSearchParams({ view });
+  if (['capacity', 'availability', 'security'].includes(view)) q.set('days', days);
+  if (fresh) q.set('fresh', '1');
+  const r = await fetch('api.php?' + q, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+  let j = null;
+  try { j = await r.json(); } catch (e) { /* respuesta no JSON */ }
+  if (!r.ok || !j) throw new Error(j && j.error ? j.error : 'HTTP ' + r.status + (r.status === 404 ? ' (¿está api.php junto a esta página?)' : ''));
+  return j;
+}
+async function loadViews(names, fresh) {
+  state.busy = true; $main().classList.add('busy');
+  const res = await Promise.allSettled(names.map(n => fetchView(API_VIEW[n], state.days, fresh)));
+  names.forEach((n, i) => { state.data[n] = res[i].status === 'fulfilled' ? res[i].value : { fatal: res[i].reason.message || String(res[i].reason) }; });
+  if (state.anon) {
+    names.forEach(n => { state.raw[n] = state.data[n]; });
+    anonDiscover(state.raw);
+    names.forEach(n => { if (!state.raw[n].fatal) state.data[n] = anonView(n, state.raw[n]); });
+  }
+  state.busy = false; state.loaded = true; $main().classList.remove('busy');
+  render();
+}
+const $main = () => document.getElementById('main');
+
+function sourceChips() {
+  const D = state.data, chips = [];
+  const st = (label, parts) => {
+    const bad = parts.filter(p => !p.ok);
+    chips.push(h('span', { class: 'chip', title: bad.length ? bad[0].error : 'Responde bien' }, sevIcon(bad.length ? 'crit' : 'ok'), label + (bad.length ? ': error' : '')));
+  };
+  if (!state.loaded) return [];
+  if (state.anon) chips.push(h('span', { class: 'chip', title: 'Los nombres de equipos, IPs y usuarios están reemplazados por alias' }, sevIcon('unk'), 'Nombres e IPs anonimizados'));
+  st('Zabbix', [partOf('capacity', 'zabbix'), partOf('availability', 'zabbix')]);
+  st('Wazuh API', [partOf('availability', 'wazuh')]);
+  st('Wazuh índice', [partOf('patches', 'wazuh'), partOf('security', 'wazuh')]);
+  return chips;
+}
+
+function render() {
+  const V = VIEWS.find(v => v.id === state.view) || VIEWS[0];
+  document.getElementById('demo-banner').hidden = !state.demo;
+  // chrome
+  document.querySelectorAll('#tabs .tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === V.id)));
+  document.getElementById('win').parentElement.style.display = V.win ? '' : 'none';
+  document.getElementById('host-wrap').style.display = V.host ? '' : 'none';
+  syncUi(V);
+  document.querySelectorAll('#win button').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.d === state.days)));
+  document.getElementById('sources').replaceChildren(...sourceChips());
+  if (!state.loaded) { $main().replaceChildren(h('div', { class: 'empty', text: 'Cargando datos…' })); return; }
+  const M = buildModel();
+  state.M = M;
+  // selector de equipo
+  const sel = document.getElementById('host');
+  const names = M.ents.map(e => e.name);
+  if (state.host !== 'all' && !names.includes(state.host)) state.host = 'all';
+  sel.replaceChildren(h('option', { value: 'all', text: 'Todos los equipos' }), ...names.map(n => h('option', { value: n, text: n })));
+  sel.value = state.host;
+  const gen = Math.max(0, ...['capacity', 'availability', 'patches', 'security'].map(k => (state.data[k] && state.data[k].generated) || 0));
+  document.getElementById('updated').textContent = gen ? 'Datos de ' + fmtDT(gen) : '';
+  // contador en la pestaña Resumen
+  const todo = buildTodo(M), urgent = todo.filter(t => t.sev === 'crit' || t.sev === 'high').length;
+  const tab = document.querySelector('#tabs .tab[data-id="resumen"]');
+  tab.replaceChildren('Resumen', urgent ? h('span', { class: 'count', text: String(urgent), 'aria-label': urgent + ' puntos urgentes' }) : null);
+  let nodes;
+  try { nodes = VIEW_FN[V.id](M); } catch (e) { nodes = [errCard('Error al armar la vista', e.message)]; console.error(e); }
+  $main().replaceChildren(h('div', { class: 'grid' }, nodes));
+  document.title = 'Panel de decisiones · ' + V.name;
+  renderDrawer();
+  syncTv(V);
+}
+
+function readHash() {
+  const [v, host] = location.hash.replace('#', '').split('/');
+  if (VIEWS.some(x => x.id === v)) state.view = v;
+  state.host = host ? decodeURIComponent(host) : 'all';
+}
+
+function boot() {
+  const q = new URLSearchParams(location.search);
+  state.demo = q.has('demo') || location.protocol === 'file:';
+  state.anon = q.has('anon');
+  try { const t = localStorage.getItem('panel-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) { /* sin storage */ }
+  const dd = Number(q.get('days')); if ([30, 60, 90].includes(dd)) state.days = dd;
+  const tabs = document.getElementById('tabs');
+  VIEWS.forEach(v => tabs.append(h('button', { class: 'tab', type: 'button', role: 'tab', 'data-id': v.id, text: v.name, onclick: () => go(v.id, state.host && VIEWS.find(x => x.id === v.id).host ? state.host : 'all') })));
+  tabs.addEventListener('keydown', ev => {
+    if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
+    const i = VIEWS.findIndex(v => v.id === state.view), n = (i + (ev.key === 'ArrowRight' ? 1 : VIEWS.length - 1)) % VIEWS.length;
+    go(VIEWS[n].id, 'all'); tabs.querySelector('[data-id="' + VIEWS[n].id + '"]').focus();
+  });
+  const win = document.getElementById('win');
+  [30, 60, 90].forEach(d => win.append(h('button', { type: 'button', role: 'radio', 'data-d': d, text: d + ' días', onclick: () => { if (state.days !== d) { state.days = d; loadViews(['capacity', 'availability', 'security']); } } })));
+  document.getElementById('host').addEventListener('change', ev => go(state.view, ev.target.value));
+  document.getElementById('refresh').addEventListener('click', () => loadViews(['meta', 'capacity', 'availability', 'patches', 'security'], true));
+  const th = document.getElementById('theme');
+  th.append(s('svg', { width: 16, height: 16, viewBox: '0 0 16 16', 'aria-hidden': 'true' }, s('circle', { cx: 8, cy: 8, r: 6, fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.5 }), s('path', { d: 'M8 2a6 6 0 0 1 0 12z', fill: 'var(--ink)' })));
+  th.addEventListener('click', () => {
+    const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('panel-theme', next); } catch (e) { /* sin storage */ }
+  });
+  initUi();
+  window.addEventListener('hashchange', () => { readHash(); render(); });
+  readHash();
+  render();
+  loadViews(['meta', 'capacity', 'availability', 'patches', 'security']);
+}
+document.addEventListener('DOMContentLoaded', boot);
+
+'use strict';
+/* ===== Resumen (tablero), panel de detalle por equipo, filtros, modo pantalla, auto-actualización ===== */
+Object.assign(state, { q: '', sevf: 'all', drawer: null, tv: false, auto: 0, showAll: false, M: null });
+
+const TIERS = ['ok', 'low', 'med', 'high', 'crit'];
+const TIER_ORDER = { crit: 0, high: 1, med: 2, low: 3, ok: 4 };
+
+function entityTier(e, todo) {
+  let r = 0;
+  for (const t of todo) if (t.host === e.name) r = Math.max(r, RANK[t.sev]);
+  if (e.zbx && e.zbx.state === 'down') r = 4;
+  if (e.vuln && e.vuln.critical > 0) r = Math.max(r, 3);
+  if (e.agent && e.agent.status !== 'active') r = Math.max(r, 2);
+  return TIERS[r];
+}
+const matchQ = text => { const q = lc(state.q).trim(); return !q || lc(text).includes(q); };
+
+function miniRow(label, v) {
+  const k = v == null ? '' : v >= 90 ? 'c' : v >= 80 ? 'w' : '';
+  return h('div', { class: 'mini' }, h('span', { text: label }),
+    h('div', { class: 'bar' }, v == null ? null : h('i', { class: k, style: { width: Math.max(1, Math.min(100, v)) + '%' } })),
+    h('span', { class: 'val', text: v == null ? '—' : fmt(v) + ' %' }));
+}
+
+function tile(e, tier) {
+  const disk = e.disks.length ? [...e.disks].sort((a, b) => (b.now ?? 0) - (a.now ?? 0))[0] : null;
+  const ifDown = (partOf('availability', 'zabbix').ok ? state.data.availability.zabbix.ifaces : []).filter(i => !i.up && norm(i.host) === e.key).length;
+  const foot = [];
+  if (e.vuln) foot.push(h('span', {}, sevIcon(e.vuln.critical > 0 ? 'crit' : e.vuln.high > 0 ? 'high' : 'ok'), e.vuln.critical + ' crít · ' + e.vuln.high + ' altas'));
+  if (e.agent) foot.push(h('span', {}, sevIcon(e.agent.status === 'active' ? 'ok' : 'high'), 'Agente ' + (e.agent.status === 'active' ? 'activo' : 'desconectado')));
+  if (ifDown) foot.push(h('span', {}, sevIcon('med'), ifDown + ' interfaz caída'));
+  const b = h('button', { class: 'tile t-' + tier, type: 'button', 'aria-label': e.name + ': ' + SEV[tier].label + '. Abrir detalle' },
+    h('div', { class: 'hd' }, h('div', {}, h('div', { class: 'nm', text: e.name }), h('div', { class: 'rl', text: e.label || (e.net ? 'Red' : ' ') })), sevChip(tier)),
+    e.net ? null : [miniRow(disk ? 'Disco' : 'Disco', disk ? disk.now : null), miniRow('RAM', e.ram ? e.ram.now : null), miniRow('CPU', e.cpu ? e.cpu.now : null)],
+    foot.length ? h('div', { class: 'ft' }, foot) : null);
+  b.addEventListener('click', () => openHost(e.name, b));
+  return b;
+}
+
+function matrixTable(M, rows) {
+  const stateChip = e => !e.zbx ? sevChip('unk', 'Sin Zabbix') : e.zbx.state === 'up' ? sevChip('ok', 'Arriba') : e.zbx.state === 'down' ? sevChip('crit', 'Caído') : sevChip('unk');
+  const maxDisk = e => (e.disks.length ? [...e.disks].sort((a, b) => (b.now ?? 0) - (a.now ?? 0))[0] : null);
+  return tbl([
+    { h: 'Equipo', f: e => [h('b', { text: e.name }), e.label ? h('div', { class: 'muted', text: e.label }) : null] },
+    { h: 'Estado', f: stateChip },
+    { h: 'Disp. ' + state.days + ' d', num: true, f: e => (e.zbx && e.zbx.avail_pct != null ? pct(e.zbx.avail_pct, 2) : '—') },
+    { h: 'Disco más lleno', f: e => { const d = maxDisk(e); return d ? [meter(d.now), h('div', { class: 'muted', text: d.label })] : h('span', { class: 'muted', text: '—' }); } },
+    { h: 'Llena en', num: true, f: e => { const d = [...e.disks].sort(byUrgency)[0]; return d ? fmtDays(d.d100) : '—'; } },
+    { h: 'RAM p95', num: true, f: e => (e.ram ? pct(e.ram.p95) : '—') },
+    { h: 'Crít. / Altas', num: true, f: e => (e.vuln ? e.vuln.critical + ' / ' + e.vuln.high : '—') },
+    { h: 'Wazuh', f: agentChipOf },
+  ], rows, { click: e => openHost(e.name), empty: 'Sin equipos para este filtro.' });
+}
+
+function viewResumen(M) {
+  const D = state.data, todo = buildTodo(M);
+  const cnt = k => todo.filter(t => t.sev === k).length;
+  const urgent = cnt('crit') + cnt('high');
+  const out = [];
+
+  // ---- hero + lista
+  const shown = todo.filter(t => (state.sevf === 'all' || t.sev === state.sevf) && matchQ(t.title + ' ' + t.detail + ' ' + t.host));
+  const limit = state.showAll ? shown.length : 5;
+  const list = shown.length
+    ? h('ul', { class: 'todo' }, shown.slice(0, limit).map(t => h('li', {},
+      sevChip(t.sev), h('div', {}, h('div', { class: 't', text: t.title }), h('div', { class: 'd', text: t.detail })),
+      h('button', { class: 'btn', type: 'button', text: t.go === 'resumen' ? 'Ver' : 'Ver detalle', 'aria-label': 'Ver detalle: ' + t.title, onclick: () => (t.host !== 'all' && M.ents.some(e => e.name === t.host) && ['capacidad', 'disponibilidad', 'parches'].includes(t.go) ? openHost(t.host) : go(t.go, t.host)) }))))
+    : h('div', { class: 'callout' }, sevIcon('ok'), todo.length ? 'Ningún punto coincide con el filtro.' : 'No hay nada que requiera acción con los datos actuales.');
+  const more = shown.length > 5 ? h('button', { class: 'link-btn more', type: 'button', text: state.showAll ? 'Mostrar menos' : 'Mostrar los ' + shown.length, onclick: () => { state.showAll = !state.showAll; render(); } }) : null;
+  const segs = ['crit', 'high', 'med', 'low'].map(k => ({ k, n: cnt(k) })).filter(x => x.n);
+  out.push(card({
+    title: 'Qué atender hoy', sub: 'Ordenado por urgencia y por la importancia del equipo (una base de datos pesa más que un servidor de pruebas).', cls: 'col-12',
+    body: h('div', {},
+      h('div', { class: 'hero' }, h('span', { class: 'num', text: String(urgent) }),
+        h('span', { class: 'txt' }, [h('b', { text: urgent === 1 ? 'punto urgente' : 'puntos urgentes' }), urgent ? ' · requieren acción pronto' : ' · todo dentro de lo esperado'])),
+      todo.length ? h('div', { class: 'sevbar', role: 'img', 'aria-label': segs.map(x => x.n + ' ' + SEV[x.k].label).join(', ') }, segs.map(x => h('i', { style: { flexGrow: x.n, background: SEV[x.k].color } }))) : null,
+      todo.length ? h('div', { class: 'sevlegend' }, ['crit', 'high', 'med', 'low'].map(k => h('span', {}, sevIcon(k), SEV[k].label + ' ' + cnt(k)))) : null,
+      h('div', { style: { marginTop: '10px' } }, list), more),
+  }));
+
+  // ---- KPIs
+  const av = partOf('availability', 'zabbix'), sec = partOf('security', 'wazuh'), pa = partOf('patches', 'wazuh');
+  const hosts = av.ok ? av.hosts.filter(x => M.ents.some(e => e.name === x.host)) : [];
+  const up = hosts.filter(x => x.state === 'up').length;
+  const avs = hosts.map(x => x.avail_pct).filter(x => x != null);
+  out.push(kpi({ label: 'Equipos arriba', value: av.ok ? up + ' / ' + hosts.length : '—', delta: av.ok ? (avs.length ? 'Disponibilidad media ' + pct(sum(avs) / avs.length, 2) + ' en ' + state.days + ' días' : '') : 'sin datos de Zabbix' }));
+  const first = [...M.disks].filter(o => o.fit).sort(byUrgency)[0];
+  out.push(kpi({ label: 'Primer disco en llenarse', value: first ? fmtDays(first.d100) : '—', delta: first ? first.ent.name + ' ' + first.label + ' · hoy ' + pct(first.now) : 'sin datos de capacidad' }));
+  const crit = M.ents.reduce((a, e) => a + (e.vuln ? e.vuln.critical : 0), 0) + M.pcs.reduce((a, p) => a + (p.vuln ? p.vuln.critical : 0), 0);
+  const hist = pa.ok ? pa.history.map(x => [x.ts, x.totals.critical]) : [];
+  out.push(kpi({ label: 'Vulnerabilidades críticas', value: pa.ok ? fmt(crit) : '—', delta: pa.ok ? 'en ' + (M.ents.filter(e => e.vuln && e.vuln.critical > 0).length + M.pcs.filter(p => p.vuln && p.vuln.critical > 0).length) + ' equipos' : 'sin datos de Wazuh', spark: spark(hist) }));
+  const hi = sec.ok ? sec.by_day.map(d => [d.ts, d.high]) : [];
+  out.push(kpi({ label: 'Alertas altas (24 h)', value: sec.ok ? fmt(sec.last24.high) : '—', delta: sec.ok ? 'Promedio diario ' + fmt(sum(sec.by_day.map(d => d.high)) / Math.max(1, sec.by_day.length), 1) : 'sin datos de Wazuh', spark: spark(hi) }));
+
+  // ---- tablero de equipos
+  const ents = M.ents.filter(e => matchQ(e.name + ' ' + e.label + ' ' + (e.role ? e.role.role : '')));
+  const tiers = new Map(ents.map(e => [e, entityTier(e, todo)]));
+  ents.sort((a, b) => (TIER_ORDER[tiers.get(a)] - TIER_ORDER[tiers.get(b)]) || (b.weight - a.weight) || a.name.localeCompare(b.name));
+  const nT = k => ents.filter(e => tiers.get(e) === k).length;
+  out.push(card({
+    title: 'Estado de los equipos', cls: 'col-12', sub: 'Tocá un equipo para ver su detalle: discos, vulnerabilidades, problemas y proyección.',
+    body: ents.length ? h('div', {}, h('div', { class: 'sevlegend', style: { marginBottom: '12px' } }, ['crit', 'high', 'med', 'ok'].map(k => h('span', {}, sevIcon(k), SEV[k].label + ' ' + nT(k)))),
+      h('div', { class: 'tiles' }, ents.map(e => tile(e, tiers.get(e))))) : h('div', { class: 'empty', text: M.ents.length ? 'Ningún equipo coincide con la búsqueda.' : 'Sin datos de Zabbix.' }),
+    table: () => matrixTable(M, ents),
+  }));
+
+  // ---- PCs
+  const act = M.pcs.filter(p => p.agent && p.agent.status === 'active').length, dis = M.pcs.filter(p => p.agent && p.agent.status !== 'active').length;
+  const pcCrit = M.pcs.reduce((a, p) => a + (p.vuln ? p.vuln.critical : 0), 0), pcHigh = M.pcs.reduce((a, p) => a + (p.vuln ? p.vuln.high : 0), 0);
+  out.push(card({
+    title: 'PCs (resumen)', cls: 'col-12', sub: 'Se muestran en conjunto; el detalle por equipo es solo de servidores y red.',
+    body: M.pcs.length ? h('div', { class: 'callout' }, sevIcon('unk'), h('div', {}, M.pcs.length + ' PCs con agente de Wazuh: ' + act + ' activas y ' + dis + ' desconectadas (suelen ser equipos apagados). Vulnerabilidades: ' + fmt(pcCrit) + ' críticas y ' + fmt(pcHigh) + ' altas en total.')) : h('div', { class: 'empty', text: 'Sin datos de PCs.' }),
+  }));
+  return out;
+}
+
+/* ===== panel lateral de detalle ===== */
+function diskLines(list, horizon) {
+  const colors = new Map();
+  [...list].sort((a, b) => (a.ent.name + a.label).localeCompare(b.ent.name + b.label)).forEach((o, i) => colors.set(o, 'var(--s' + ((i % 8) + 1) + ')'));
+  const series = [], leg = [];
+  let minV = 100, nowT = 0;
+  list.forEach(o => {
+    const col = colors.get(o), nm = o.ent.name + ' ' + o.label;
+    series.push({ name: nm, color: col, pts: o.avg });
+    leg.push({ name: nm, color: col });
+    const last = o.avg[o.avg.length - 1];
+    if (last) { minV = Math.min(minV, ...o.avg.map(p => p[1])); nowT = Math.max(nowT, last[0]); }
+    const pp = last ? projPts(o.fit, last[1], last[0], horizon, 100) : [];
+    if (pp.length > 1) series.push({ name: nm + ' (proyección)', color: col, pts: pp, dash: true });
+  });
+  return { series, leg, yMin: Math.max(0, Math.floor((minV - 6) / 10) * 10), nowT };
+}
+
+function hostDetail(M, e) {
+  const todo = buildTodo(M).filter(t => t.host === e.name);
+  const tier = entityTier(e, buildTodo(M));
+  const D = state.data, av = partOf('availability', 'zabbix'), sec = partOf('security', 'wazuh'), pa = partOf('patches', 'wazuh');
+  const body = h('div', { class: 'db' });
+  const sec_ = (title, ...kids) => body.append(h('section', { class: 'dsec' }, h('h3', { text: title }), ...kids));
+
+  // estado general
+  const st = e.zbx ? (e.zbx.state === 'up' ? sevChip('ok', 'Arriba') : e.zbx.state === 'down' ? sevChip('crit', 'Caído') : sevChip('unk')) : sevChip('unk', 'Sin Zabbix');
+  body.append(h('div', { class: 'dstats' },
+    h('div', { class: 'dstat' }, h('div', { class: 'l', text: 'Estado en Zabbix' }), st),
+    h('div', { class: 'dstat' }, h('div', { class: 'l', text: 'Agente de Wazuh' }), agentChipOf(e)),
+    h('div', { class: 'dstat' }, h('div', { class: 'l', text: 'Sin reiniciar' }), h('b', { text: e.zbx && e.zbx.uptime_s != null ? Math.round(e.zbx.uptime_s / 86400) + ' días' : '—' })),
+    h('div', { class: 'dstat' }, h('div', { class: 'l', text: 'Disponibilidad ' + state.days + ' d' }), h('b', { text: e.zbx && e.zbx.avail_pct != null ? pct(e.zbx.avail_pct, 2) : '—' }))));
+  if (e.ips.length || (e.zbx && e.zbx.groups.length)) body.append(h('div', { class: 'muted', text: [e.ips.join(', '), e.zbx ? e.zbx.groups.join(', ') : ''].filter(Boolean).join(' · ') }));
+
+  // qué atender
+  sec_('Qué atender en este equipo', todo.length
+    ? h('ul', { class: 'dlist' }, todo.map(t => h('li', {}, sevChip(t.sev), h('div', { class: 't', text: t.title }), h('div', { class: 'd', text: t.detail }))))
+    : h('div', { class: 'callout' }, sevIcon('ok'), 'Nada urgente para este equipo.'));
+
+  // discos
+  if (e.disks.length) {
+    const ds = [...e.disks].sort(byUrgency);
+    const lines = diskLines(ds, state.days);
+    sec_('Discos y proyección',
+      hbar(ds.map(o => { const t = diskTier(o); return { label: o.label, value: o.now ?? 0, color: t === 'ok' ? 'var(--s1)' : t === 'med' ? 'var(--sev-med)' : t === 'high' ? 'var(--sev-high)' : 'var(--sev-crit)', icon: t === 'ok' ? null : sevIcon(t), text: pct(o.now) + ' · ' + (o.d100 == null ? 'estable' : o.d100 === 0 ? 'sin margen' : 'llena en ' + fmtDays(o.d100)) }; }), { max: 100, track: true }),
+      h('div', { style: { height: '10px' } }),
+      lines.leg.length > 1 ? lineLegend(lines.leg, true) : null,
+      responsive(W => lineChart(W, { height: 220, series: lines.series, yMin: lines.yMin, yMax: 100, nowT: lines.nowT, yFmt: v => fmt(v) + ' %', tipFmt: v => pct(v, 1), label: 'Uso de disco con proyección', thresholds: [{ y: 90, label: '90 %', color: 'var(--sev-high)' }, { y: 100, label: 'Lleno', color: 'var(--sev-crit)' }] })));
+  }
+  // RAM y CPU
+  if (e.ram || e.cpu) {
+    const row = (name, o) => o ? h('div', { class: 'drow' }, h('span', { text: name }), meter(o.now), h('span', { class: 'chart', style: { width: '120px', minHeight: 0 } }, spark(o.avg, 120, 26))) : null;
+    sec_('Memoria y CPU', row('RAM', e.ram), row('CPU', e.cpu), h('div', { class: 'note', text: 'Barra = valor actual. La línea es el promedio diario de los últimos ' + state.days + ' días.' }));
+  }
+  // vulnerabilidades
+  if (e.vuln) {
+    const cv = pa.ok ? pa.cves.filter(c => c.agents.some(a => norm(a) === e.key || (e.agent && norm(a) === norm(e.agent.name)))).sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 6) : [];
+    sec_('Vulnerabilidades (Wazuh)',
+      h('div', { class: 'vgrid' }, [['critical', 'Críticas'], ['high', 'Altas'], ['medium', 'Medias'], ['low', 'Bajas']].map(([k, l]) => h('div', { class: 'vcell' }, h('div', { class: 'n', text: fmt(e.vuln[k]) }), h('div', { class: 'l' }, h('i', { style: { background: SEV_COL[k] } }), l)))),
+      cv.length ? h('div', { style: { marginTop: '10px' } }, tbl([{ h: 'CVE', f: c => c.id }, { h: 'Sev.', f: c => sevChip(c.severity === 'critical' ? 'crit' : 'high') }, { h: 'CVSS', num: true, f: c => (c.score == null ? '—' : fmt(c.score, 1)) }, { h: 'Otros equipos', num: true, f: c => c.agents.length - 1 }], cv)) : null);
+  }
+  // problemas de Zabbix
+  if (av.ok) {
+    const pr = av.problems.filter(p => norm(p.host) === e.key);
+    if (pr.length) sec_('Problemas activos en Zabbix', h('ul', { class: 'dlist' }, pr.map(p => h('li', {}, sevChip(sevFromZbx(p.severity)), h('div', { class: 't', text: p.name }), h('div', { class: 'd', text: 'Desde hace ' + ago(p.clock) })))));
+  }
+  // seguridad
+  if (sec.ok) {
+    const match = k => norm(k) === e.key || (e.agent && norm(k) === norm(e.agent.name));
+    const fa = sec.failed.by_agent.find(x => match(x.key)), fl = sec.flooded.find(x => match(x.agent));
+    const lines = [];
+    if (fa) lines.push(h('li', {}, sevIcon('med'), h('div', { class: 't', text: fmt(fa.n) + ' inicios de sesión fallidos en ' + state.days + ' días' })));
+    if (fl) lines.push(h('li', {}, sevIcon('med'), h('div', { class: 't', text: 'Búfer del agente saturado ' + fl.n + ' veces' }), h('div', { class: 'd', text: fl.last ? 'La última, hace ' + ago(fl.last) + '.' : '' })));
+    if (lines.length) sec_('Seguridad (Wazuh)', h('ul', { class: 'dlist' }, lines));
+  }
+  // atajos
+  sec_('Ver en otras pestañas', h('div', { class: 'dacts' }, [['Capacidad', 'capacidad'], ['Parches', 'parches'], ['Disponibilidad', 'disponibilidad']].map(([l, v]) => h('button', { class: 'btn', type: 'button', text: l, onclick: () => { closeHost(); go(v, e.name); } }))));
+  return { body, tier };
+}
+
+let drawerReturn = null;
+function openHost(name, trigger) { state.drawer = name; drawerReturn = trigger || document.activeElement; renderDrawer(true); }
+function closeHost() {
+  state.drawer = null;
+  renderDrawer();
+  if (drawerReturn && document.contains(drawerReturn)) drawerReturn.focus();
+  drawerReturn = null;
+}
+function renderDrawer(focus) {
+  document.getElementById('drawer')?.remove();
+  document.getElementById('scrim')?.remove();
+  if (!state.drawer || !state.M) return;
+  const e = state.M.ents.find(x => x.name === state.drawer);
+  if (!e) { state.drawer = null; return; }
+  const { body, tier } = hostDetail(state.M, e);
+  const close = h('button', { class: 'btn', type: 'button', text: 'Cerrar', 'aria-label': 'Cerrar detalle', onclick: closeHost });
+  const d = h('aside', { id: 'drawer', class: 'drawer', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'drawer-title' },
+    h('div', { class: 'dh' }, h('div', {}, h('h2', { id: 'drawer-title', text: e.name }), h('div', { class: 'muted', text: e.label || (e.net ? 'Equipo de red' : '') }), h('div', { style: { marginTop: '6px' } }, sevChip(tier))), close),
+    body);
+  document.body.append(h('div', { id: 'scrim', class: 'scrim', onclick: closeHost }), d);
+  if (focus) close.focus();
+}
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') { if (state.drawer) closeHost(); else if (state.tv) setTv(false); return; }
+  if (ev.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
+    const q = document.getElementById('q');
+    if (q && q.offsetParent) { ev.preventDefault(); q.focus(); q.select(); }
+  }
+  if (ev.key === 'Tab' && state.drawer) {
+    const d = document.getElementById('drawer');
+    const f = [...d.querySelectorAll('button, [href], input, select, [tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (!d.contains(document.activeElement)) { ev.preventDefault(); first.focus(); }
+    else if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+    else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+  }
+});
+
+/* ===== filtros del Resumen, auto-actualización y modo pantalla ===== */
+function syncUi(V) {
+  document.getElementById('q-wrap').style.display = V.id === 'resumen' ? '' : 'none';
+  document.getElementById('sev-wrap').style.display = V.id === 'resumen' ? '' : 'none';
+  document.querySelectorAll('#sevf button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.s === state.sevf)));
+}
+let autoTimer = null, tvTimer = null, clockTimer = null;
+function setAuto(min) {
+  state.auto = min;
+  clearInterval(autoTimer);
+  if (min) autoTimer = setInterval(() => loadViews(['meta', 'capacity', 'availability', 'patches', 'security'], true), min * 60000);
+  const b = document.getElementById('auto');
+  b.textContent = min ? 'Auto: cada ' + min + ' min' : 'Auto: apagado';
+  b.setAttribute('aria-pressed', String(!!min));
+  try { localStorage.setItem('panel-auto', String(min)); } catch (e) { /* sin storage */ }
+}
+function syncTv(V) {
+  if (!state.tv) return;
+  document.getElementById('tv-title').textContent = V.name;
+}
+function tvTick() {
+  const i = VIEWS.findIndex(v => v.id === state.view);
+  go(VIEWS[(i + 1) % VIEWS.length].id, 'all');
+  const old = document.getElementById('tv-prog'), n = old.cloneNode();
+  old.replaceWith(n); // reinicia la animación de la barra
+}
+function setTv(on) {
+  state.tv = on;
+  document.documentElement.classList.toggle('tv', on);
+  clearInterval(tvTimer); clearInterval(clockTimer);
+  if (on) {
+    if (state.drawer) closeHost();
+    if (!state.auto) setAuto(5);
+    tvTimer = setInterval(tvTick, 20000);
+    const clk = () => { document.getElementById('tv-clock').textContent = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) + ' · ' + document.getElementById('updated').textContent; };
+    clk(); clockTimer = setInterval(clk, 15000);
+    const old = document.getElementById('tv-prog'); old.replaceWith(old.cloneNode());
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { /* el navegador puede negarlo */ });
+    go('resumen', 'all');
+  } else if (document.fullscreenElement) document.exitFullscreen().catch(() => { /* ya salió */ });
+  render();
+}
+function initUi() {
+  // severidad
+  const sevf = document.getElementById('sevf');
+  [['all', 'Todo'], ['crit', 'Críticos'], ['high', 'Altos'], ['med', 'Medios']].forEach(([k, l]) => sevf.append(h('button', { type: 'button', role: 'radio', 'data-s': k, text: l, onclick: () => { state.sevf = k; state.showAll = false; render(); } })));
+  // buscador (con pequeña espera para no rearmar todo en cada tecla)
+  let t = null;
+  document.getElementById('q').addEventListener('input', ev => { clearTimeout(t); t = setTimeout(() => { state.q = ev.target.value; render(); }, 140); });
+  // auto y pantalla
+  document.getElementById('auto').addEventListener('click', () => setAuto(state.auto ? 0 : 5));
+  document.getElementById('tvbtn').addEventListener('click', () => setTv(true));
+  document.getElementById('tv-exit').addEventListener('click', () => setTv(false));
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && state.tv) setTv(false); });
+  let a = 0;
+  try { a = Number(localStorage.getItem('panel-auto')) || 0; } catch (e) { /* sin storage */ }
+  const qp = new URLSearchParams(location.search);
+  if (qp.has('auto')) a = Number(qp.get('auto')) || 5;
+  setAuto(a);
+  if (qp.has('tv')) setTimeout(() => setTv(true), 0);
+}
+
+'use strict';
+/* Modo anónimo (?anon=1): reemplaza nombres de equipos, IPs y usuarios por alias genéricos.
+   Trabaja sobre los datos al llegar, así que todo lo que se dibuja (tooltips y detalle incluidos) ya sale anonimizado. */
+const ANON = { map: new Map(), alias: new Map(), ips: new Map(), users: new Map(), cnt: {}, extra: new Map() };
+const ANON_PREFIX = { dc: 'DC', db: 'DB', file: 'FS', app: 'APP', infra: 'HV', backup: 'BKP', monitor: 'MON' };
+const ANON_LABEL = { dc: 'Controlador de dominio', db: 'Base de datos', file: 'Servidor de archivos', app: 'Aplicación', infra: 'Infraestructura', backup: 'Respaldos', monitor: 'Monitoreo', other: '' };
+const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function anonName(name, prefix) {
+  const k = norm(name);
+  if (!k || ANON.map.has(k)) return;
+  ANON.cnt[prefix] = (ANON.cnt[prefix] || 0) + 1;
+  const n = ANON.cnt[prefix];
+  ANON.map.set(k, prefix + '-' + String(n).padStart(prefix === 'PC' ? 3 : 2, '0'));
+}
+function anonDiscover(raw) {
+  const ok = v => raw[v] && !raw[v].fatal;
+  const roles = ok('meta') ? lowerKeys(raw.meta.roles) : {};
+  const zhosts = ok('availability') && raw.availability.zabbix && raw.availability.zabbix.ok ? raw.availability.zabbix.hosts : [];
+  const zset = new Set(zhosts.map(z => norm(z.host)));
+  const netset = new Set(zhosts.filter(z => z.network).map(z => norm(z.host)));
+  const seen = [];
+  const add = n => { if (n && typeof n === 'string' && n !== '-') seen.push(n); };
+  zhosts.forEach(z => { add(z.host); add(z.name); });
+  if (ok('availability') && raw.availability.wazuh && raw.availability.wazuh.ok) raw.availability.wazuh.agents.forEach(a => add(a.name));
+  if (ok('availability') && raw.availability.zabbix && raw.availability.zabbix.ok) { raw.availability.zabbix.problems.forEach(p => add(p.host)); raw.availability.zabbix.ifaces.forEach(i => add(i.host)); }
+  if (ok('capacity') && raw.capacity.zabbix && raw.capacity.zabbix.ok) raw.capacity.zabbix.series.forEach(x => add(x.host));
+  if (ok('patches') && raw.patches.wazuh && raw.patches.wazuh.ok) { raw.patches.wazuh.agents.forEach(a => add(a.name)); raw.patches.wazuh.cves.forEach(c => c.agents.forEach(add)); }
+  if (ok('security') && raw.security.wazuh && raw.security.wazuh.ok) {
+    const s = raw.security.wazuh;
+    s.failed.by_agent.forEach(x => add(x.key)); s.flooded.forEach(x => add(x.agent));
+    s.lockouts.recent.forEach(r => { add(r.agent); add(r.caller); });
+    s.failed.by_user.forEach(u => { if (!ANON.users.has(u.key)) ANON.users.set(u.key, 'usuario-' + String(ANON.users.size + 1).padStart(2, '0')); });
+    s.lockouts.recent.forEach(r => { if (!ANON.users.has(r.user)) ANON.users.set(r.user, 'usuario-' + String(ANON.users.size + 1).padStart(2, '0')); });
+  }
+  if (ok('security') && raw.security.perimeter && raw.security.perimeter.ok) {
+    const R = raw.security.perimeter.router;
+    [...R.recent.map(r => r.user), ...R.fail_by_user.map(u => u.key)].forEach(u => { if (!ANON.users.has(u)) ANON.users.set(u, 'usuario-' + String(ANON.users.size + 1).padStart(2, '0')); });
+  }
+  if (ok('meta')) { Object.keys(raw.meta.roles || {}).forEach(add); Object.entries(raw.meta.aliases || {}).forEach(([a, b]) => { add(a); add(b); }); }
+  // los equipos con rol primero, para que DC-01, DB-01… sigan el orden de importancia
+  const sorted = [...new Set(seen)].sort((a, b) => ((roles[norm(b)] ? roles[norm(b)].weight : 0) - (roles[norm(a)] ? roles[norm(a)].weight : 0)) || a.localeCompare(b));
+  for (const n of sorted) {
+    const r = roles[norm(n)];
+    const prefix = r ? (ANON_PREFIX[r.role] || 'SRV') : netset.has(norm(n)) ? 'RTR' : /^pc[-_]/i.test(n) || (!zset.has(norm(n)) && !r) ? 'PC' : 'SRV';
+    anonName(n, prefix);
+  }
+  // alias de configuración (NOMBRE-ZABBIX => NOMBRE-WAZUH): mismo equipo, mismo alias
+  if (ok('meta')) for (const [z, w] of Object.entries(raw.meta.aliases || {})) if (ANON.map.has(norm(z))) ANON.map.set(norm(w), ANON.map.get(norm(z)));
+  // expresiones de reemplazo (nombre completo y nombre corto, el más largo primero)
+  const strs = new Map();
+  for (const n of seen) { strs.set(n, ANON.map.get(norm(n))); strs.set(n.split('.')[0], ANON.map.get(norm(n))); }
+  const list = [...strs.entries()].filter(([k]) => k.length >= 2).sort((a, b) => b[0].length - a[0].length);
+  const mk = (arr, flags) => (arr.length ? new RegExp('(?<![A-Za-z0-9_-])(?:' + arr.map(([k]) => esc(k)).join('|') + ')(?![A-Za-z0-9_-])', flags) : null);
+  ANON.reShort = mk(list.filter(([k]) => k.length <= 3), 'g');
+  ANON.reLong = mk(list.filter(([k]) => k.length > 3), 'gi');
+  ANON.lookupCS = new Map(list.map(([k, v]) => [k, v]));
+  ANON.lookupCI = new Map(list.map(([k, v]) => [lc(k), v]));
+}
+const OCT = '(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)';
+const IP_RE = new RegExp('\\b' + OCT + '(?:\\.' + OCT + '){3}\\b', 'g');
+function anonIp(ip) {
+  if (!ANON.ips.has(ip)) { const n = ANON.ips.size; ANON.ips.set(ip, '10.10.' + Math.floor(n / 250) + '.' + ((n % 250) + 1)); }
+  return ANON.ips.get(ip);
+}
+function anonView(name, data) {
+  let t = JSON.stringify(data);
+  t = t.replace(IP_RE, anonIp);
+  if (ANON.reLong) t = t.replace(ANON.reLong, m => ANON.lookupCI.get(lc(m)) || m);
+  if (ANON.reShort) t = t.replace(ANON.reShort, m => ANON.lookupCS.get(m) || m);
+  const d = JSON.parse(t);
+  if (name === 'meta') for (const r of Object.values(d.roles || {})) r.label = ANON_LABEL[r.role] || '';
+  if (name === 'security' && d.wazuh && d.wazuh.ok) {
+    d.wazuh.failed.by_user.forEach(u => { u.key = ANON.users.get(u.key) || 'usuario'; });
+    d.wazuh.lockouts.recent.forEach(r => { r.user = ANON.users.get(r.user) || 'usuario'; });
+  }
+  if (name === 'security' && d.perimeter && d.perimeter.ok) {
+    d.perimeter.router.recent.forEach(r => { r.user = ANON.users.get(r.user) || 'usuario'; });
+    d.perimeter.router.fail_by_user.forEach(u => { u.key = ANON.users.get(u.key) || 'usuario'; });
+    d.perimeter.scan.by_link.forEach((x, i) => { x.key = 'Enlace ' + (i + 1); });
+  }
+  if (name === 'patches' && d.wazuh && d.wazuh.ok) d.wazuh.agents.forEach(a => { a.os = a.os.replace(/\s+\d[\d.]*$/, ''); });
+  return d;
+}
+
+</script>
+</body>
+</html>
