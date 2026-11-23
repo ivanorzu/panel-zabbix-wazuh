@@ -1,41 +1,37 @@
 <!--
-  Reglas locales para MikroTik (login y sesiones).
+  Reglas locales para MikroTik (login y sesiones). Versión en producción.
   Instalar en: /var/ossec/etc/rules/mikrotik_rules.xml  (wazuh:wazuh, 660)
   IDs 100800-100899 reservados para MikroTik (el rango local de Wazuh es 100000-120000).
-  Revisar antes que no esten en uso:  grep -rhoE 'id="1008[0-9]{2}"' /var/ossec/etc/rules/
--->
-<group name="mikrotik,syslog,">
+  Revisar antes que no estén en uso:  grep -rhoE 'id="1008[0-9]{2}"' /var/ossec/etc/rules/
 
-  <!-- Base: cualquier linea que decodifique como mikrotik. Nivel 0 = no genera alerta. -->
+  Nota: la 100801 es hija de la 2501 porque esa regla genérica captura "login failure"
+  antes que cualquier regla propia.
+-->
+<group name="mikrotik,">
+
   <rule id="100800" level="0">
     <decoded_as>mikrotik</decoded_as>
-    <description>MikroTik: evento de syslog</description>
+    <description>MikroTik: evento del router</description>
   </rule>
 
-  <!-- Login fallido. Es hija de la 2501 (syslog generico "authentication failure"):
-       esa regla captura "login failure" antes que cualquier regla propia, asi que
-       hay que colgarse de ella en lugar de if_sid 100800. -->
   <rule id="100801" level="5">
     <if_sid>2501</if_sid>
     <decoded_as>mikrotik</decoded_as>
-    <description>MikroTik: login fallido de $(dstuser) desde $(srcip) via $(protocol)</description>
+    <description>MikroTik: inicio de sesión fallido en el router (usuario $(dstuser), desde $(srcip) por $(protocol))</description>
     <group>authentication_failed,</group>
   </rule>
 
-  <!-- 5 fallos de la misma IP en 2 minutos: fuerza bruta contra el router -->
   <rule id="100802" level="10" frequency="5" timeframe="120">
     <if_matched_sid>100801</if_matched_sid>
     <same_source_ip />
-    <description>MikroTik: varios logins fallidos desde $(srcip) (posible fuerza bruta)</description>
+    <description>MikroTik: varios inicios de sesión fallidos desde la misma IP ($(srcip))</description>
     <group>authentication_failures,</group>
   </rule>
 
-  <!-- Acceso correcto: no es un problema, pero quien entra a administrar el router
-       tiene que quedar registrado (el panel lo muestra en "Perimetro"). -->
   <rule id="100803" level="3">
     <if_sid>100800</if_sid>
     <match>logged in from</match>
-    <description>MikroTik: $(dstuser) inicio sesion desde $(srcip) via $(protocol)</description>
+    <description>MikroTik: inicio de sesión correcto (usuario $(dstuser), desde $(srcip) por $(protocol))</description>
     <group>authentication_success,</group>
   </rule>
 

@@ -1,26 +1,25 @@
 <!--
-  Reglas locales para MikroTik (firewall / perimetro).
+  Reglas locales para MikroTik (firewall / perímetro). Versión en producción.
   Instalar en: /var/ossec/etc/rules/mikrotik_rules_fw.xml  (wazuh:wazuh, 660)
 
-  EL NOMBRE DEL ARCHIVO IMPORTA: Wazuh carga las reglas en orden alfabetico y
-  estas dependen de la 100800 definida en mikrotik_rules.xml. Si este archivo se
-  llamara, por ejemplo, "a_fw.xml", se cargaria antes y Wazuh avisaria
-  "Signature ID '100800' was not found".
+  EL NOMBRE DEL ARCHIVO IMPORTA: Wazuh carga las reglas en orden alfabético y estas
+  dependen de la 100800 definida en mikrotik_rules.xml. Si este archivo se cargara antes,
+  Wazuh avisaría "Signature ID '100800' was not found".
 -->
-<group name="mikrotik,firewall,recon,">
+<group name="mikrotik,firewall,">
 
-  <!-- Conexion TCP nueva desde internet (las que el router marca con log-prefix WANIN-...) -->
   <rule id="100810" level="3">
     <if_sid>100800</if_sid>
     <match>WANIN-</match>
-    <description>MikroTik: conexion nueva desde $(srcip) hacia el puerto $(dstport) ($(wan_link))</description>
+    <description>MikroTik: conexión nueva desde internet ($(srcip) hacia el puerto $(dstport)/$(protocol) por $(wan_link))</description>
+    <group>recon,</group>
   </rule>
 
-  <!-- La misma IP insiste: 10 intentos en 5 minutos (escaneo de puertos) -->
   <rule id="100811" level="8" frequency="10" timeframe="300">
     <if_matched_sid>100810</if_matched_sid>
     <same_source_ip />
-    <description>MikroTik: $(srcip) insiste contra el perimetro (posible escaneo de puertos)</description>
+    <description>MikroTik: la misma IP de internet insiste contra el router ($(srcip), 10 intentos en 5 minutos)</description>
+    <group>recon,</group>
   </rule>
 
 </group>
